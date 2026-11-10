@@ -26,9 +26,11 @@ public class UserManagementPanel extends JPanel {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         JButton addButton = Theme.primaryButton("Add User");
         JButton toggleButton = Theme.secondaryButton("Activate/Deactivate");
+        JButton passwordButton = Theme.secondaryButton("Change Password");
         JButton refreshButton = Theme.secondaryButton("Refresh");
         toolbar.add(addButton);
         toolbar.add(toggleButton);
+        toolbar.add(passwordButton);
         toolbar.add(refreshButton);
         add(Theme.headerWithToolbar("User Management",
                 "Create staff accounts and control access.", toolbar), BorderLayout.NORTH);
@@ -46,6 +48,7 @@ public class UserManagementPanel extends JPanel {
         
         addButton.addActionListener(e -> showAddUserDialog());
         toggleButton.addActionListener(e -> toggleUserStatus());
+        passwordButton.addActionListener(e -> changePassword());
         refreshButton.addActionListener(e -> loadUsers());
     }
     
@@ -134,6 +137,36 @@ public class UserManagementPanel extends JPanel {
             } else {
                 JOptionPane.showMessageDialog(this, "Failed to update user status", "Error", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private void changePassword() {
+        int selectedRow = userTable.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a user", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int id = (int) tableModel.getValueAt(selectedRow, 0);
+        String username = (String) tableModel.getValueAt(selectedRow, 1);
+
+        JPasswordField passwordField = new JPasswordField(15);
+        int choice = JOptionPane.showConfirmDialog(this, passwordField,
+                "New password for " + username, JOptionPane.OK_CANCEL_OPTION);
+        if (choice != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String password = new String(passwordField.getPassword());
+        if (password.length() < 6) {
+            JOptionPane.showMessageDialog(this, "Password must be at least 6 characters", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (userDAO.updatePassword(id, password)) {
+            JOptionPane.showMessageDialog(this, "Password changed successfully!");
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to change password", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

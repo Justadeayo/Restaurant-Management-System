@@ -30,7 +30,7 @@
 
   <div class="table-responsive">
     <table class="table align-middle bg-white">
-      <thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th><th>Change password</th></tr></thead>
       <tbody>
         <tr th:each="u : ${users}">
           <td th:text="${u.username}"></td>
@@ -41,6 +41,12 @@
               <input type="hidden" name="active" th:value="${!u.active}">
               <button class="btn btn-sm" th:classappend="${u.active} ? 'btn-outline-danger' : 'btn-outline-success'"
                       th:text="${u.active} ? 'Deactivate' : 'Activate'"></button>
+            </form>
+          </td>
+          <td>
+            <form method="post" th:action="@{/manager/staff/{id}/password(id=${u.id})}" class="d-flex gap-1 m-0">
+              <input class="form-control form-control-sm" type="password" name="password" minlength="6" placeholder="New password" required>
+              <button class="btn btn-sm btn-outline-secondary">Change</button>
             </form>
           </td>
         </tr>

@@ -66,4 +66,22 @@ public class StaffController {
         }
         return "redirect:/manager/staff";
     }
+
+    @PostMapping("/manager/staff/{id}/password")
+    String changePassword(@PathVariable int id,
+                          @RequestParam String password,
+                          HttpSession session,
+                          RedirectAttributes redirect) {
+        if (Sessions.manager(session) == null) {
+            return "redirect:/login";
+        }
+        if (password == null || password.length() < 6) {
+            redirect.addFlashAttribute("error", "Password must be at least 6 characters.");
+        } else if (userDAO.updatePassword(id, password)) {
+            redirect.addFlashAttribute("message", "Password changed.");
+        } else {
+            redirect.addFlashAttribute("error", "The password could not be changed.");
+        }
+        return "redirect:/manager/staff";
+    }
 }

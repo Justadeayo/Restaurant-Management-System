@@ -66,6 +66,19 @@ public class UserDAO {
         return users;
     }
     
+    public boolean updatePassword(int userId, String newPassword) {
+        String sql = "UPDATE users SET password_hash = ? WHERE id = ?";
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, PasswordUtil.hashPassword(newPassword));
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean updateUserStatus(int userId, boolean isActive) {
         String sql = "UPDATE users SET is_active = ? WHERE id = ?";
         
