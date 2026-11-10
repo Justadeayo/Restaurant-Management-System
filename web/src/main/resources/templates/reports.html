@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RMS - Reports</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+<div th:replace="~{layout :: nav}"></div>
+<div class="container">
+  <h1 class="h4 mb-3">Sales report</h1>
+  <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+  <form method="get" action="/manager/reports" class="row g-2 align-items-end mb-4">
+    <div class="col-sm-4"><label class="form-label">From</label><input class="form-control" type="date" name="from" th:value="${from}"></div>
+    <div class="col-sm-4"><label class="form-label">To</label><input class="form-control" type="date" name="to" th:value="${to}"></div>
+    <div class="col-sm-4"><button class="btn btn-success w-100">Show</button></div>
+  </form>
+
+  <div th:unless="${error}">
+    <h2 class="h6">By day</h2>
+    <div class="table-responsive mb-2">
+      <table class="table bg-white align-middle">
+        <thead><tr><th>Date</th><th>Orders</th><th>Sales</th></tr></thead>
+        <tbody>
+          <tr th:each="row : ${daily}">
+            <td th:text="${row.date()}"></td>
+            <td th:text="${row.orderCount()}"></td>
+            <td th:text="${#numbers.formatDecimal(row.totalSales(), 1, 2)}"></td>
+          </tr>
+          <tr th:if="${daily.isEmpty()}"><td colspan="3" class="text-muted">No completed sales in this period.</td></tr>
+        </tbody>
+        <tfoot><tr><th colspan="2">Total</th><th th:text="${#numbers.formatDecimal(total, 1, 2)}"></th></tr></tfoot>
+      </table>
+    </div>
+
+    <h2 class="h6">By payment method</h2>
+    <div class="table-responsive mb-4">
+      <table class="table bg-white align-middle">
+        <thead><tr><th>Method</th><th>Payments</th><th>Amount</th></tr></thead>
+        <tbody>
+          <tr th:each="row : ${payments}">
+            <td th:text="${row.method()}"></td>
+            <td th:text="${row.paymentCount()}"></td>
+            <td th:text="${#numbers.formatDecimal(row.totalAmount(), 1, 2)}"></td>
+          </tr>
+          <tr th:if="${payments.isEmpty()}"><td colspan="3" class="text-muted">No payments in this period.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="h6">By item</h2>
+    <div class="table-responsive">
+      <table class="table bg-white align-middle">
+        <thead><tr><th>Item</th><th>Quantity</th><th>Sales</th></tr></thead>
+        <tbody>
+          <tr th:each="row : ${items}">
+            <td th:text="${row.itemName()}"></td>
+            <td th:text="${row.totalQuantity()}"></td>
+            <td th:text="${#numbers.formatDecimal(row.totalSales(), 1, 2)}"></td>
+          </tr>
+          <tr th:if="${items.isEmpty()}"><td colspan="3" class="text-muted">No items sold in this period.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
