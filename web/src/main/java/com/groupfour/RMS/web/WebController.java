@@ -29,8 +29,13 @@ public class WebController {
     private final PaymentDAO paymentDAO = new PaymentDAO();
     private final OrderService orderService = new OrderService();
 
+    private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER);
+
     private User currentUser(HttpSession session) {
-        return (User) session.getAttribute("user");
+        if (session.getAttribute("user") instanceof User user && STAFF_ROLES.contains(user.getRole())) {
+            return user;
+        }
+        return null;
     }
 
     @GetMapping("/")
@@ -49,7 +54,7 @@ public class WebController {
                  HttpSession session,
                  Model model) {
         User user = userDAO.authenticate(username, password);
-        if (user == null) {
+        if (user == null || !STAFF_ROLES.contains(user.getRole())) {
             model.addAttribute("error", "Invalid username or password.");
             return "login";
         }
