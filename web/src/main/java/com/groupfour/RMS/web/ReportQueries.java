@@ -90,4 +90,15 @@ public final class ReportQueries {
         }
         return rows;
     }
+
+    public static long pendingOrders() {
+        String sql = "SELECT COUNT(*) FROM orders WHERE status = 'PENDING'";
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            return rs.next() ? rs.getLong(1) : 0;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not count open orders", e);
+        }
+    }
 }

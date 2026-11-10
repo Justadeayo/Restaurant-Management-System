@@ -39,7 +39,7 @@ public class WebController {
     }
 
     private String homePage(User user) {
-        return user.getRole() == User.UserRole.MANAGER ? "redirect:/manager/menu" : "redirect:/order/new";
+        return user.getRole() == User.UserRole.MANAGER ? "redirect:/manager" : "redirect:/order/new";
     }
 
     @GetMapping("/")
