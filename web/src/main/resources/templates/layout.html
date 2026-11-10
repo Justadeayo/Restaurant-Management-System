@@ -8,6 +8,7 @@
       <a class="text-white" href="/order/new">New order</a>
       <a class="text-white" href="/orders">Orders</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}" href="/manager/menu">Menu</a>
+      <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}" href="/manager/staff">Staff</a>
       <form method="post" action="/logout" class="m-0">
         <button class="btn btn-sm btn-outline-light">Log out</button>
       </form>
