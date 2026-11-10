@@ -15,7 +15,7 @@ Payments are simulated (cash, card, or transfer), and stock is deducted automati
 
 ### Requirements
 
-- JDK 26 (Gradle downloads it automatically if it is missing)
+- JDK 21 (Gradle downloads it automatically if it is missing)
 - MySQL Server 8 or newer
 - Git
 
