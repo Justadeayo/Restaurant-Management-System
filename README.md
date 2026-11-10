@@ -60,3 +60,15 @@ To build without running:
 ```
 ./gradlew build
 ```
+
+## Web version
+
+The `web` module runs the same database and business logic in a browser, so it can be opened on a phone on the same Wi-Fi.
+
+Run it from the project root, after completing the setup above:
+
+```
+./gradlew :web:bootRun
+```
+
+Open `http://<your-PC-IP>:8080` on your phone, or `http://localhost:8080` on the PC, and log in with the same accounts. Prices are read from the database on the server, never from the page.
