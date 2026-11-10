@@ -38,14 +38,20 @@ public class WebController {
         return null;
     }
 
+    private String homePage(User user) {
+        return user.getRole() == User.UserRole.MANAGER ? "redirect:/manager/menu" : "redirect:/order/new";
+    }
+
     @GetMapping("/")
     String root(HttpSession session) {
-        return currentUser(session) == null ? "redirect:/login" : "redirect:/order/new";
+        User user = currentUser(session);
+        return user == null ? "redirect:/login" : homePage(user);
     }
 
     @GetMapping("/login")
     String loginForm(HttpSession session) {
-        return currentUser(session) == null ? "login" : "redirect:/order/new";
+        User user = currentUser(session);
+        return user == null ? "login" : homePage(user);
     }
 
     @PostMapping("/login")
@@ -59,7 +65,7 @@ public class WebController {
             return "login";
         }
         session.setAttribute("user", user);
-        return "redirect:/order/new";
+        return homePage(user);
     }
 
     @PostMapping("/logout")
