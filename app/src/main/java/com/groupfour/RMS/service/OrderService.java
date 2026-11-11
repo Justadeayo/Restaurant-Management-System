@@ -74,7 +74,7 @@ public class OrderService {
     // Moves an order to its next step. The database update only succeeds if the
     // order is still in the status we read, so two staff cannot skip a step together.
     public void advanceStatus(int orderId, User user) {
-        if (!user.isManager() && !user.isCashier() && !user.isKitchen()) {
+        if (!user.isManager() && !user.isCashier() && !user.isKitchen() && !user.isRider()) {
             throw new IllegalArgumentException("Only staff can change order status");
         }
         Order order = orderDAO.getOrderById(orderId);
@@ -83,6 +83,10 @@ public class OrderService {
         }
         if (user.isKitchen() && order.getStatus() != Order.OrderStatus.SENT_TO_KITCHEN) {
             throw new IllegalArgumentException("Kitchen can only mark orders that were sent to the kitchen as ready");
+        }
+        if (user.isRider() && (order.getOrderType() != Order.OrderType.REMOTE
+                || (order.getStatus() != Order.OrderStatus.READY && order.getStatus() != Order.OrderStatus.OUT_FOR_DELIVERY))) {
+            throw new IllegalArgumentException("Riders can only move remote orders that are ready or out for delivery");
         }
         Order.OrderStatus next = order.nextStatus();
         if (next == null) {
@@ -186,6 +190,11 @@ public class OrderService {
 
     public List<Order> getAllOrders() {
         return orderDAO.getAllOrders();
+    }
+
+    // Remote orders waiting for a rider: ready, or already out for delivery.
+    public List<Order> getDeliveryQueue() {
+        return orderDAO.getDeliveryOrders();
     }
 
     // Orders waiting in the kitchen, oldest first, with their items.

@@ -12,14 +12,17 @@
 
     <div class="collapse navbar-collapse" id="rmsMenu">
       <ul class="navbar-nav ms-auto align-items-lg-center gap-1 pt-3 pt-lg-0 pb-2 pb-lg-0">
-        <li class="nav-item" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}">
+        <li class="nav-item" th:if="${session.user != null and (session.user.role.name() == 'MANAGER' or session.user.role.name() == 'CASHIER')}">
           <a class="nav-link px-3 rounded" href="/order/new">New order</a>
         </li>
-        <li class="nav-item" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}">
+        <li class="nav-item" th:if="${session.user != null and (session.user.role.name() == 'MANAGER' or session.user.role.name() == 'CASHIER')}">
           <a class="nav-link px-3 rounded" href="/orders">Orders</a>
         </li>
         <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'KITCHEN'}">
           <a class="nav-link px-3 rounded" href="/kitchen">Kitchen</a>
+        </li>
+        <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'RIDER'}">
+          <a class="nav-link px-3 rounded" href="/rider">Deliveries</a>
         </li>
         <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}">
           <a class="nav-link px-3 rounded" href="/manager">Dashboard</a>

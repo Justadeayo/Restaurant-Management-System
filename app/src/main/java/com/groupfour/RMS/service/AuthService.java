@@ -39,4 +39,8 @@ public class AuthService {
     public boolean isKitchen() {
         return currentUser != null && currentUser.isKitchen();
     }
+
+    public boolean isRider() {
+        return currentUser != null && currentUser.isRider();
+    }
 }

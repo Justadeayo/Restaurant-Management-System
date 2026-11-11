@@ -55,4 +55,8 @@ public class User {
     public boolean isKitchen() {
         return role == UserRole.KITCHEN;
     }
+
+    public boolean isRider() {
+        return role == UserRole.RIDER;
+    }
 }

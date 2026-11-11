@@ -29,7 +29,7 @@ public class WebController {
     private final PaymentDAO paymentDAO = new PaymentDAO();
     private final OrderService orderService = new OrderService();
 
-    private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN);
+    private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN, User.UserRole.RIDER);
 
     private User currentUser(HttpSession session) {
         User user = Sessions.signedIn(session);
@@ -39,7 +39,7 @@ public class WebController {
     // Order pages are for cashiers and managers only; kitchen staff use /kitchen.
     private User cashierUser(HttpSession session) {
         User user = currentUser(session);
-        return user != null && user.getRole() != User.UserRole.KITCHEN ? user : null;
+        return user != null && (user.getRole() == User.UserRole.MANAGER || user.getRole() == User.UserRole.CASHIER) ? user : null;
     }
 
     private String homePage(User user) {
@@ -48,6 +48,9 @@ public class WebController {
         }
         if (user.getRole() == User.UserRole.KITCHEN) {
             return "redirect:/kitchen";
+        }
+        if (user.getRole() == User.UserRole.RIDER) {
+            return "redirect:/rider";
         }
         return "redirect:/order/new";
     }
