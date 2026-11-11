@@ -93,7 +93,7 @@ public class UserManagementPanel extends JPanel {
         changeButton.addActionListener(e -> changePassword(user, passwordField));
         JPanel passwordRow = new JPanel(new BorderLayout(8, 0));
         passwordRow.setOpaque(false);
-        passwordRow.add(passwordField, BorderLayout.CENTER);
+        passwordRow.add(com.groupfour.RMS.ui.theme.PasswordToggle.wrap(passwordField), BorderLayout.CENTER);
         passwordRow.add(changeButton, BorderLayout.EAST);
         middle.add(passwordLabel);
         middle.add(passwordRow);
@@ -208,7 +208,7 @@ public class UserManagementPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = row++; dialog.add(new JLabel("Username:"), gbc);
         gbc.gridx = 1; gbc.gridy = row-1; dialog.add(usernameField, gbc);
         gbc.gridx = 0; gbc.gridy = row++; dialog.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = row-1; dialog.add(passwordField, gbc);
+        gbc.gridx = 1; gbc.gridy = row-1; dialog.add(com.groupfour.RMS.ui.theme.PasswordToggle.wrap(passwordField), gbc);
         gbc.gridx = 0; gbc.gridy = row++; dialog.add(new JLabel("Role:"), gbc);
         gbc.gridx = 1; gbc.gridy = row-1; dialog.add(roleCombo, gbc);
 

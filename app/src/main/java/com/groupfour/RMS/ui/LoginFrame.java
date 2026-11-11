@@ -116,7 +116,7 @@ public class LoginFrame extends JFrame {
         card.add(fieldLabel("Password"), gbc);
         gbc.gridx = 1;
         passwordField = new JPasswordField(16);
-        card.add(passwordField, gbc);
+        card.add(com.groupfour.RMS.ui.theme.PasswordToggle.wrap(passwordField), gbc);
 
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         gbc.insets = new Insets(16, 6, 6, 6);
