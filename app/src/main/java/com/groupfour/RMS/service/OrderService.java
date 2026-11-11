@@ -25,21 +25,23 @@ public class OrderService {
     
     public int createOrder(Order order, User cashier) {
         order.setCashierId(cashier.getId());
-        order.calculateTotal();
-        
-        // Validate stock availability
+
         for (OrderItem item : order.getOrderItems()) {
-            if (item.getMenuItemId() != null) {
-                MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuItemId());
-                if (menuItem == null || !menuItem.isAvailable()) {
-                    throw new IllegalArgumentException("Menu item not available: " + item.getItemName());
-                }
-                if (menuItem.getStockQuantity() < item.getQuantity()) {
-                    throw new IllegalArgumentException("Insufficient stock for: " + item.getItemName());
-                }
+            if (item.getMenuItemId() == null) {
+                throw new IllegalArgumentException("Only menu items can be ordered: " + item.getItemName());
             }
+            MenuItem menuItem = menuItemDAO.getMenuItemById(item.getMenuItemId());
+            if (menuItem == null || !menuItem.isAvailable()) {
+                throw new IllegalArgumentException("Menu item not available: " + item.getItemName());
+            }
+            if (menuItem.getStockQuantity() < item.getQuantity()) {
+                throw new IllegalArgumentException("Insufficient stock for: " + item.getItemName());
+            }
+            item.setItemName(menuItem.getName());
+            item.setUnitPrice(menuItem.getPrice());
         }
-        
+
+        order.calculateTotal();
         return orderDAO.createOrder(order);
     }
     
