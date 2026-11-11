@@ -15,10 +15,8 @@ public class KitchenController {
     private final OrderService orderService = new OrderService();
 
     private User kitchenUser(HttpSession session) {
-        if (session.getAttribute("user") instanceof User user && user.getRole() == User.UserRole.KITCHEN) {
-            return user;
-        }
-        return null;
+        User user = Sessions.signedIn(session);
+        return user != null && user.getRole() == User.UserRole.KITCHEN ? user : null;
     }
 
     @GetMapping("/kitchen")

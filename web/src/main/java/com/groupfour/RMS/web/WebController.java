@@ -32,10 +32,8 @@ public class WebController {
     private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN);
 
     private User currentUser(HttpSession session) {
-        if (session.getAttribute("user") instanceof User user && STAFF_ROLES.contains(user.getRole())) {
-            return user;
-        }
-        return null;
+        User user = Sessions.signedIn(session);
+        return user != null && STAFF_ROLES.contains(user.getRole()) ? user : null;
     }
 
     // Order pages are for cashiers and managers only; kitchen staff use /kitchen.

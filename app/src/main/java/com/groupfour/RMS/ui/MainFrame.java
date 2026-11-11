@@ -1,5 +1,6 @@
 package com.groupfour.RMS.ui;
 
+import com.groupfour.RMS.dao.UserDAO;
 import com.groupfour.RMS.service.AuthService;
 import com.groupfour.RMS.ui.panels.*;
 import com.groupfour.RMS.ui.theme.Theme;
@@ -11,10 +12,13 @@ import java.awt.*;
 public class MainFrame extends JFrame {
     private AuthService authService;
     private JTabbedPane tabbedPane;
+    private Timer accessTimer;
 
     public MainFrame(AuthService authService) {
         this.authService = authService;
         initComponents();
+        accessTimer = new Timer(30000, e -> checkAccess());
+        accessTimer.start();
     }
 
     private void initComponents() {
@@ -39,7 +43,7 @@ public class MainFrame extends JFrame {
             tabbedPane.addTab("Inventory", new InventoryPanel());
             tabbedPane.addTab("Orders", new OrderHistoryPanel(authService));
             tabbedPane.addTab("Reports", new ReportsPanel());
-            tabbedPane.addTab("User Management", new UserManagementPanel());
+            tabbedPane.addTab("User Management", new UserManagementPanel(authService));
         } else if (authService.isCashier()) {
             tabbedPane.addTab("New Order", new NewOrderPanel(authService));
             tabbedPane.addTab("Order History", new OrderHistoryPanel(authService));
@@ -118,5 +122,18 @@ public class MainFrame extends JFrame {
             dispose();
             new LoginFrame().setVisible(true);
         }
+    }
+
+    // Signs the user out when a manager has deactivated or removed their access.
+    private void checkAccess() {
+        if (new UserDAO().isActive(authService.getCurrentUser().getId())) {
+            return;
+        }
+        accessTimer.stop();
+        JOptionPane.showMessageDialog(this, "Your access has been removed. Please contact the manager.",
+                "Access removed", JOptionPane.WARNING_MESSAGE);
+        authService.logout();
+        dispose();
+        new LoginFrame().setVisible(true);
     }
 }

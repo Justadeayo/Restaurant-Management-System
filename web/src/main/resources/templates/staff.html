@@ -30,7 +30,7 @@
 
   <div class="table-responsive">
     <table class="table align-middle bg-white">
-      <thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th><th>Change password</th></tr></thead>
+      <thead><tr><th>Username</th><th>Role</th><th>Status</th><th></th><th>Change password</th><th>Remove</th></tr></thead>
       <tbody>
         <tr th:each="u : ${users}">
           <td th:text="${u.username}"></td>
@@ -47,6 +47,16 @@
             <form method="post" th:action="@{/manager/staff/{id}/password(id=${u.id})}" class="d-flex gap-1 m-0">
               <input class="form-control form-control-sm" type="password" name="password" minlength="6" placeholder="New password" required>
               <button class="btn btn-sm btn-outline-secondary">Change</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" th:action="@{/manager/staff/{id}/delete(id=${u.id})}" class="m-0 mb-1"
+                  onsubmit="return confirm('Delete this account? This cannot be undone.');">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+            <form method="post" th:action="@{/manager/staff/{id}/remove-access(id=${u.id})}" class="m-0"
+                  onsubmit="return confirm('Remove access? The account cannot sign in and its password will be replaced.');">
+              <button class="btn btn-sm btn-outline-warning">Remove access</button>
             </form>
           </td>
         </tr>

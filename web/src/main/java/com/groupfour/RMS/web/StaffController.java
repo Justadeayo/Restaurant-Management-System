@@ -84,4 +84,40 @@ public class StaffController {
         }
         return "redirect:/manager/staff";
     }
+
+    @PostMapping("/manager/staff/{id}/delete")
+    String deleteUser(@PathVariable int id,
+                      HttpSession session,
+                      RedirectAttributes redirect) {
+        User manager = Sessions.manager(session);
+        if (manager == null) {
+            return "redirect:/login";
+        }
+        if (manager.getId() == id) {
+            redirect.addFlashAttribute("error", "You cannot delete your own account.");
+        } else if (userDAO.deleteUnusedUser(id)) {
+            redirect.addFlashAttribute("message", "Account deleted.");
+        } else {
+            redirect.addFlashAttribute("error", "This account has orders or payments, so it cannot be deleted. Use Remove access instead.");
+        }
+        return "redirect:/manager/staff";
+    }
+
+    @PostMapping("/manager/staff/{id}/remove-access")
+    String removeAccess(@PathVariable int id,
+                        HttpSession session,
+                        RedirectAttributes redirect) {
+        User manager = Sessions.manager(session);
+        if (manager == null) {
+            return "redirect:/login";
+        }
+        if (manager.getId() == id) {
+            redirect.addFlashAttribute("error", "You cannot remove your own access.");
+        } else if (userDAO.removeAccess(id)) {
+            redirect.addFlashAttribute("message", "Access removed. The account can no longer sign in, and its password has been replaced.");
+        } else {
+            redirect.addFlashAttribute("error", "Access could not be removed.");
+        }
+        return "redirect:/manager/staff";
+    }
 }

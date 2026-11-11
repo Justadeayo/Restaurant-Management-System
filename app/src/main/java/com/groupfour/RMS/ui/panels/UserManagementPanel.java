@@ -2,6 +2,7 @@ package com.groupfour.RMS.ui.panels;
 
 import com.groupfour.RMS.dao.UserDAO;
 import com.groupfour.RMS.model.User;
+import com.groupfour.RMS.service.AuthService;
 import com.groupfour.RMS.ui.theme.Theme;
 
 import javax.swing.*;
@@ -11,10 +12,12 @@ import java.util.List;
 
 public class UserManagementPanel extends JPanel {
     private UserDAO userDAO;
+    private AuthService authService;
     private JTable userTable;
     private DefaultTableModel tableModel;
     
-    public UserManagementPanel() {
+    public UserManagementPanel(AuthService authService) {
+        this.authService = authService;
         userDAO = new UserDAO();
         initComponents();
         loadUsers();
@@ -30,7 +33,11 @@ public class UserManagementPanel extends JPanel {
         JButton refreshButton = Theme.secondaryButton("Refresh");
         toolbar.add(addButton);
         toolbar.add(toggleButton);
+        JButton deleteButton = Theme.dangerButton("Delete");
+        JButton removeButton = Theme.dangerButton("Remove Access");
         toolbar.add(passwordButton);
+        toolbar.add(deleteButton);
+        toolbar.add(removeButton);
         toolbar.add(refreshButton);
         add(Theme.headerWithToolbar("User Management",
                 "Create staff accounts and control access.", toolbar), BorderLayout.NORTH);
@@ -50,6 +57,8 @@ public class UserManagementPanel extends JPanel {
         toggleButton.addActionListener(e -> toggleUserStatus());
         passwordButton.addActionListener(e -> changePassword());
         refreshButton.addActionListener(e -> loadUsers());
+        deleteButton.addActionListener(e -> deleteUser());
+        removeButton.addActionListener(e -> removeAccess());
     }
     
     private void loadUsers() {
@@ -167,6 +176,63 @@ public class UserManagementPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Password changed successfully!");
         } else {
             JOptionPane.showMessageDialog(this, "Failed to change password", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private int selectedRow() {
+        int row = userTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a user", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return row;
+    }
+
+    // Deletes only accounts with no orders, payments or stock movements.
+    private void deleteUser() {
+        int row = selectedRow();
+        if (row == -1) return;
+        int id = (int) tableModel.getValueAt(row, 0);
+        String username = (String) tableModel.getValueAt(row, 1);
+
+        if (id == authService.getCurrentUser().getId()) {
+            JOptionPane.showMessageDialog(this, "You cannot delete your own account.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Delete " + username + "? This cannot be undone.", "Confirm", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        if (userDAO.deleteUnusedUser(id)) {
+            JOptionPane.showMessageDialog(this, "Account deleted.");
+            loadUsers();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                "This account has orders or payments, so it cannot be deleted. Use Remove Access instead.",
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Blocks sign-in and replaces the password with a random one.
+    private void removeAccess() {
+        int row = selectedRow();
+        if (row == -1) return;
+        int id = (int) tableModel.getValueAt(row, 0);
+        String username = (String) tableModel.getValueAt(row, 1);
+
+        if (id == authService.getCurrentUser().getId()) {
+            JOptionPane.showMessageDialog(this, "You cannot remove your own access.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Remove access for " + username + "? The account cannot sign in and its password will be replaced.",
+            "Confirm", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        if (userDAO.removeAccess(id)) {
+            JOptionPane.showMessageDialog(this, "Access removed.");
+            loadUsers();
+        } else {
+            JOptionPane.showMessageDialog(this, "Access could not be removed.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
