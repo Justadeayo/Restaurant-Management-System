@@ -21,7 +21,7 @@ public class StaffController {
             return "redirect:/login";
         }
         model.addAttribute("users", userDAO.getAllUsers());
-        model.addAttribute("roles", new User.UserRole[]{User.UserRole.CASHIER, User.UserRole.MANAGER});
+        model.addAttribute("roles", User.UserRole.values());
         return "staff";
     }
 
