@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<nav th:fragment="nav" class="navbar navbar-dark bg-success mb-4">
-  <div class="container">
+<nav th:fragment="nav" class="navbar navbar-dark bg-success mb-4 py-2">
+  <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2">
     <a class="navbar-brand" href="/">RMS</a>
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex flex-wrap align-items-center gap-3">
       <a class="text-white" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}" href="/order/new">New order</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}" href="/orders">Orders</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'KITCHEN'}" href="/kitchen">Kitchen</a>
