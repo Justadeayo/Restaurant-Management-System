@@ -28,6 +28,9 @@ public class NewOrderPanel extends JPanel {
     private JTable orderTable;
     private DefaultTableModel orderTableModel;
     private JLabel totalLabel;
+    private JComboBox<Order.OrderType> typeBox;
+    private JLabel detailLabel;
+    private JTextField detailField;
     private Order currentOrder;
     
     public NewOrderPanel(AuthService authService) {
@@ -80,6 +83,18 @@ public class NewOrderPanel extends JPanel {
         JScrollPane orderScroll = new JScrollPane(orderTable);
         Theme.styleScrollPane(orderScroll);
         orderPanel.add(orderScroll, BorderLayout.CENTER);
+
+        JPanel typePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
+        typePanel.setBackground(Theme.BG);
+        typeBox = new JComboBox<>(Order.OrderType.values());
+        detailLabel = new JLabel("Table number:");
+        detailField = new JTextField(14);
+        typeBox.addActionListener(e -> updateDetailLabel());
+        typePanel.add(new JLabel("Order type:"));
+        typePanel.add(typeBox);
+        typePanel.add(detailLabel);
+        typePanel.add(detailField);
+        orderPanel.add(typePanel, BorderLayout.NORTH);
         
         JPanel orderBottomPanel = new JPanel(new BorderLayout());
         totalLabel = new JLabel("Total: ₦0.00");
@@ -190,19 +205,34 @@ public class NewOrderPanel extends JPanel {
         updateOrderDisplay();
     }
     
+    private void updateDetailLabel() {
+        detailLabel.setText(typeBox.getSelectedItem() == Order.OrderType.REMOTE
+                ? "Delivery address:" : "Table number:");
+    }
+
     private void confirmOrder() {
         if (currentOrder.getOrderItems().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Order is empty", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
+
+        Order.OrderType type = (Order.OrderType) typeBox.getSelectedItem();
+        String detail = detailField.getText();
+        currentOrder.setOrderType(type);
+        if (type == Order.OrderType.REMOTE) {
+            currentOrder.setDeliveryAddress(detail);
+            currentOrder.setTableNumber(null);
+        } else {
+            currentOrder.setTableNumber(detail);
+            currentOrder.setDeliveryAddress(null);
+        }
+
         try {
             int orderId = orderService.createOrder(currentOrder, authService.getCurrentUser());
             if (orderId > 0) {
-                JOptionPane.showMessageDialog(this, "Order created successfully! Order ID: " + orderId, 
+                JOptionPane.showMessageDialog(this, "Order #" + orderId + " placed. Move it along from Order History.",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
-                // Show payment dialog
-                showPaymentDialog(orderId);
+                detailField.setText("");
                 clearOrder();
                 loadMenuItems();
             } else {
@@ -210,31 +240,6 @@ public class NewOrderPanel extends JPanel {
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void showPaymentDialog(int orderId) {
-        Order order = orderService.getOrderById(orderId);
-        if (order == null) return;
-        
-        String[] options = {"CASH", "CARD", "TRANSFER", "Cancel"};
-        int choice = JOptionPane.showOptionDialog(this, 
-            "Order Total: ₦" + order.getTotalAmount() + "\nSelect payment method:", 
-            "Payment", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, 
-            null, options, options[0]);
-        
-        if (choice >= 0 && choice < 3) {
-            String method = options[choice];
-            try {
-                if (orderService.processPayment(orderId, Payment.PaymentMethod.valueOf(method), authService.getCurrentUser())) {
-                    JOptionPane.showMessageDialog(this, "Payment successful! Order completed.", 
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Payment failed", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
         }
     }
 }

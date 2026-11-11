@@ -13,7 +13,7 @@ import java.util.List;
 public class OrderDAO {
     
     public int createOrder(Order order) {
-        String sql = "INSERT INTO orders (cashier_id, total_amount, status) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO orders (cashier_id, total_amount, status, order_type, table_number, delivery_address) VALUES (?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -27,6 +27,9 @@ public class OrderDAO {
             stmt.setInt(1, order.getCashierId());
             stmt.setBigDecimal(2, order.getTotalAmount());
             stmt.setString(3, order.getStatus().name());
+            stmt.setString(4, order.getOrderType().name());
+            stmt.setString(5, order.getTableNumber());
+            stmt.setString(6, order.getDeliveryAddress());
             
             stmt.executeUpdate();
             rs = stmt.getGeneratedKeys();
@@ -146,32 +149,33 @@ public class OrderDAO {
         return items;
     }
     
-    public boolean updateOrderStatus(int orderId, Order.OrderStatus status) {
-        String sql = "UPDATE orders SET status = ?, completed_at = ? WHERE id = ?";
-        
+    // Changes status only if the order is still in the status we expect.
+    public boolean changeStatus(int orderId, Order.OrderStatus from, Order.OrderStatus to) {
+        String sql = "UPDATE orders SET status = ?, completed_at = IF(? = 'PAID', NOW(), completed_at) WHERE id = ? AND status = ?";
+
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setString(1, status.name());
-            if (status == Order.OrderStatus.COMPLETED) {
-                stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-            } else {
-                stmt.setNull(2, Types.TIMESTAMP);
-            }
+
+            stmt.setString(1, to.name());
+            stmt.setString(2, to.name());
             stmt.setInt(3, orderId);
-            
+            stmt.setString(4, from.name());
+
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
-    
+
     private Order mapResultSetToOrder(ResultSet rs) throws SQLException {
         Order order = new Order();
         order.setId(rs.getInt("id"));
         order.setCashierId(rs.getInt("cashier_id"));
         order.setCashierName(rs.getString("cashier_name"));
+        order.setOrderType(Order.OrderType.valueOf(rs.getString("order_type")));
+        order.setTableNumber(rs.getString("table_number"));
+        order.setDeliveryAddress(rs.getString("delivery_address"));
         order.setTotalAmount(rs.getBigDecimal("total_amount"));
         order.setStatus(Order.OrderStatus.valueOf(rs.getString("status")));
         order.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());

@@ -28,7 +28,7 @@ public final class ReportQueries {
         String sql = "SELECT DATE(o.created_at) AS sale_date, COUNT(DISTINCT o.id) AS order_count, "
                 + "SUM(o.total_amount) AS total_sales "
                 + "FROM orders o "
-                + "WHERE o.status = 'COMPLETED' AND DATE(o.created_at) BETWEEN ? AND ? "
+                + "WHERE o.status = 'PAID' AND DATE(o.created_at) BETWEEN ? AND ? "
                 + "GROUP BY DATE(o.created_at) ORDER BY sale_date";
         List<DailySales> rows = new ArrayList<>();
         try (Connection conn = DBConfig.getConnection();
@@ -50,7 +50,7 @@ public final class ReportQueries {
     public static List<PaymentSales> paymentSales(LocalDate from, LocalDate to) {
         String sql = "SELECT p.payment_method, COUNT(*) AS payment_count, SUM(p.amount) AS total_amount "
                 + "FROM payments p JOIN orders o ON p.order_id = o.id "
-                + "WHERE p.status = 'SUCCESSFUL' AND o.status = 'COMPLETED' AND DATE(p.created_at) BETWEEN ? AND ? "
+                + "WHERE p.status = 'SUCCESSFUL' AND o.status = 'PAID' AND DATE(p.created_at) BETWEEN ? AND ? "
                 + "GROUP BY p.payment_method";
         List<PaymentSales> rows = new ArrayList<>();
         try (Connection conn = DBConfig.getConnection();
@@ -72,7 +72,7 @@ public final class ReportQueries {
     public static List<ItemSales> itemSales(LocalDate from, LocalDate to) {
         String sql = "SELECT oi.item_name, SUM(oi.quantity) AS total_quantity, SUM(oi.subtotal) AS total_sales "
                 + "FROM order_items oi JOIN orders o ON oi.order_id = o.id "
-                + "WHERE o.status = 'COMPLETED' AND DATE(o.created_at) BETWEEN ? AND ? "
+                + "WHERE o.status = 'PAID' AND DATE(o.created_at) BETWEEN ? AND ? "
                 + "GROUP BY oi.item_name ORDER BY total_sales DESC";
         List<ItemSales> rows = new ArrayList<>();
         try (Connection conn = DBConfig.getConnection();
@@ -92,7 +92,7 @@ public final class ReportQueries {
     }
 
     public static long pendingOrders() {
-        String sql = "SELECT COUNT(*) FROM orders WHERE status = 'PENDING'";
+        String sql = "SELECT COUNT(*) FROM orders WHERE status NOT IN ('PAID', 'CANCELLED')";
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {

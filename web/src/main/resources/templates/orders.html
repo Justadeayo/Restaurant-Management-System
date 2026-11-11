@@ -13,11 +13,13 @@
   <div class="table-responsive">
     <table class="table align-middle bg-white">
       <thead>
-        <tr><th>#</th><th>Cashier</th><th>Total</th><th>Status</th><th>Created</th></tr>
+        <tr><th>#</th><th>Type</th><th>Table / address</th><th>Cashier</th><th>Total</th><th>Status</th><th>Created</th></tr>
       </thead>
       <tbody>
         <tr th:each="o : ${orders}">
           <td><a th:href="@{/orders/{id}(id=${o.id})}" th:text="${o.id}"></a></td>
+          <td th:text="${o.orderType}"></td>
+          <td th:text="${o.tableNumber != null ? o.tableNumber : o.deliveryAddress}"></td>
           <td th:text="${o.cashierName}"></td>
           <td th:text="${#numbers.formatDecimal(o.totalAmount, 1, 2)}"></td>
           <td th:text="${o.status}"></td>

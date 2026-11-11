@@ -5,7 +5,6 @@ import com.groupfour.RMS.dao.OrderDAO;
 import com.groupfour.RMS.dao.PaymentDAO;
 import com.groupfour.RMS.model.*;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,15 +15,16 @@ public class OrderService {
     private OrderDAO orderDAO;
     private MenuItemDAO menuItemDAO;
     private PaymentDAO paymentDAO;
-    
+
     public OrderService() {
         this.orderDAO = new OrderDAO();
         this.menuItemDAO = new MenuItemDAO();
         this.paymentDAO = new PaymentDAO();
     }
-    
+
     public int createOrder(Order order, User cashier) {
         order.setCashierId(cashier.getId());
+        validateDestination(order);
 
         for (OrderItem item : order.getOrderItems()) {
             if (item.getMenuItemId() == null) {
@@ -44,26 +44,75 @@ public class OrderService {
         order.calculateTotal();
         return orderDAO.createOrder(order);
     }
-    
+
+    private void validateDestination(Order order) {
+        if (order.getOrderType() == Order.OrderType.REMOTE) {
+            String address = trimToNull(order.getDeliveryAddress());
+            if (address == null) {
+                throw new IllegalArgumentException("Enter a delivery address for a remote order");
+            }
+            order.setDeliveryAddress(address);
+            order.setTableNumber(null);
+        } else {
+            String table = trimToNull(order.getTableNumber());
+            if (table == null) {
+                throw new IllegalArgumentException("Enter a table number for a table order");
+            }
+            order.setTableNumber(table);
+            order.setDeliveryAddress(null);
+        }
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    // Moves an order to its next step. The database update only succeeds if the
+    // order is still in the status we read, so two staff cannot skip a step together.
+    public void advanceStatus(int orderId, User user) {
+        if (!user.isManager() && !user.isCashier()) {
+            throw new IllegalArgumentException("Only staff can change order status");
+        }
+        Order order = orderDAO.getOrderById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        Order.OrderStatus next = order.nextStatus();
+        if (next == null) {
+            throw new IllegalArgumentException("This order cannot move on from " + order.getStatus());
+        }
+        if (!orderDAO.changeStatus(orderId, order.getStatus(), next)) {
+            throw new IllegalArgumentException("This order was changed by someone else. Refresh and try again.");
+        }
+    }
+
     public boolean processPayment(int orderId, Payment.PaymentMethod method, User processedBy) {
         Order order = orderDAO.getOrderById(orderId);
         if (order == null) {
             return false;
         }
-        
+
         if (paymentDAO.hasSuccessfulPayment(orderId)) {
             throw new IllegalArgumentException("Order already has a successful payment");
         }
-        
+
         if (order.getStatus() == Order.OrderStatus.CANCELLED) {
             throw new IllegalArgumentException("Cannot pay for cancelled order");
         }
-        
+
+        if (order.getStatus() != Order.OrderStatus.DELIVERED) {
+            throw new IllegalArgumentException("Payment is recorded after the order is delivered");
+        }
+
         Connection conn = null;
         try {
             conn = DBConfig.getConnection();
             conn.setAutoCommit(false);
-            
+
             // Create payment
             Payment payment = new Payment();
             payment.setOrderId(orderId);
@@ -71,7 +120,7 @@ public class OrderService {
             payment.setPaymentMethod(method);
             payment.setStatus(Payment.PaymentStatus.SUCCESSFUL);
             payment.setProcessedBy(processedBy.getId());
-            
+
             // Insert payment
             String paymentSql = "INSERT INTO payments (order_id, amount, payment_method, status, processed_by) VALUES (?, ?, ?, ?, ?)";
             try (var stmt = conn.prepareStatement(paymentSql)) {
@@ -82,7 +131,7 @@ public class OrderService {
                 stmt.setInt(5, payment.getProcessedBy());
                 stmt.executeUpdate();
             }
-            
+
             // Deduct stock
             for (OrderItem item : order.getOrderItems()) {
                 if (item.getMenuItemId() != null) {
@@ -98,14 +147,16 @@ public class OrderService {
                     }
                 }
             }
-            
-            // Update order status
-            String orderSql = "UPDATE orders SET status = 'COMPLETED', completed_at = NOW() WHERE id = ?";
+
+            // Mark the order paid, only if it is still delivered
+            String orderSql = "UPDATE orders SET status = 'PAID', completed_at = NOW() WHERE id = ? AND status = 'DELIVERED'";
             try (var stmt = conn.prepareStatement(orderSql)) {
                 stmt.setInt(1, orderId);
-                stmt.executeUpdate();
+                if (stmt.executeUpdate() == 0) {
+                    throw new SQLException("Order is not ready for payment");
+                }
             }
-            
+
             conn.commit();
             return true;
         } catch (Exception e) {
@@ -129,11 +180,11 @@ public class OrderService {
             }
         }
     }
-    
+
     public List<Order> getAllOrders() {
         return orderDAO.getAllOrders();
     }
-    
+
     public Order getOrderById(int orderId) {
         return orderDAO.getOrderById(orderId);
     }

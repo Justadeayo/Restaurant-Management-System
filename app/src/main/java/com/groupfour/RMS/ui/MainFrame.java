@@ -37,12 +37,12 @@ public class MainFrame extends JFrame {
             tabbedPane.addTab("Dashboard", new DashboardPanel());
             tabbedPane.addTab("Menu Management", new MenuManagementPanel());
             tabbedPane.addTab("Inventory", new InventoryPanel());
-            tabbedPane.addTab("Orders", new OrderHistoryPanel());
+            tabbedPane.addTab("Orders", new OrderHistoryPanel(authService));
             tabbedPane.addTab("Reports", new ReportsPanel());
             tabbedPane.addTab("User Management", new UserManagementPanel());
         } else if (authService.isCashier()) {
             tabbedPane.addTab("New Order", new NewOrderPanel(authService));
-            tabbedPane.addTab("Order History", new OrderHistoryPanel());
+            tabbedPane.addTab("Order History", new OrderHistoryPanel(authService));
         }
 
         add(tabbedPane, BorderLayout.CENTER);

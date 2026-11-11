@@ -98,7 +98,7 @@ public class ReportsPanel extends JPanel {
         String sql = "SELECT DATE(o.created_at) as sale_date, COUNT(DISTINCT o.id) as order_count, " +
                      "SUM(o.total_amount) as total_sales " +
                      "FROM orders o " +
-                     "WHERE o.status = 'COMPLETED' AND DATE(o.created_at) BETWEEN ? AND ? " +
+                     "WHERE o.status = 'PAID' AND DATE(o.created_at) BETWEEN ? AND ? " +
                      "GROUP BY DATE(o.created_at) ORDER BY sale_date";
         
         try (Connection conn = DBConfig.getConnection();
@@ -137,7 +137,7 @@ public class ReportsPanel extends JPanel {
     private void generateSalesByPaymentMethod(String startDate, String endDate) {
         String sql = "SELECT p.payment_method, COUNT(*) as payment_count, SUM(p.amount) as total_amount " +
                      "FROM payments p JOIN orders o ON p.order_id = o.id " +
-                     "WHERE p.status = 'SUCCESSFUL' AND o.status = 'COMPLETED' AND DATE(p.created_at) BETWEEN ? AND ? " +
+                     "WHERE p.status = 'SUCCESSFUL' AND o.status = 'PAID' AND DATE(p.created_at) BETWEEN ? AND ? " +
                      "GROUP BY p.payment_method";
         
         try (Connection conn = DBConfig.getConnection();
@@ -173,7 +173,7 @@ public class ReportsPanel extends JPanel {
     private void generateSalesByItem(String startDate, String endDate) {
         String sql = "SELECT oi.item_name, SUM(oi.quantity) as total_quantity, SUM(oi.subtotal) as total_sales " +
                      "FROM order_items oi JOIN orders o ON oi.order_id = o.id " +
-                     "WHERE o.status = 'COMPLETED' AND DATE(o.created_at) BETWEEN ? AND ? " +
+                     "WHERE o.status = 'PAID' AND DATE(o.created_at) BETWEEN ? AND ? " +
                      "GROUP BY oi.item_name ORDER BY total_sales DESC";
         
         try (Connection conn = DBConfig.getConnection();

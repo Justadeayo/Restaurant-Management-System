@@ -12,6 +12,25 @@
   <h1 class="h4 mb-3">New order</h1>
   <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
   <form method="post" action="/order/new">
+    <div class="card card-body bg-white mb-3">
+      <div class="row g-2">
+        <div class="col-sm-4">
+          <label class="form-label" for="orderType">Order type</label>
+          <select class="form-select" id="orderType" name="orderType">
+            <option value="TABLE">Table</option>
+            <option value="REMOTE">Remote (delivery)</option>
+          </select>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label" for="tableNumber">Table number (table orders)</label>
+          <input class="form-control" id="tableNumber" name="tableNumber">
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label" for="deliveryAddress">Delivery address (remote orders)</label>
+          <input class="form-control" id="deliveryAddress" name="deliveryAddress">
+        </div>
+      </div>
+    </div>
     <div class="table-responsive">
       <table class="table align-middle bg-white">
         <thead>

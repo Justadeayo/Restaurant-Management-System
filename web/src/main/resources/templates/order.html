@@ -12,6 +12,12 @@
   <h1 class="h4 mb-3">Order #<span th:text="${order.id}"></span></h1>
   <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
   <div class="alert alert-success" th:if="${paid}">This order is paid.</div>
+  <p class="mb-3">
+    <span th:text="${order.orderType}"></span>
+    <span th:if="${order.tableNumber != null}" th:text="'· Table ' + ${order.tableNumber}"></span>
+    <span th:if="${order.deliveryAddress != null}" th:text="'· ' + ${order.deliveryAddress}"></span>
+    <span th:text="'· ' + ${order.status}"></span>
+  </p>
 
   <div class="table-responsive mb-3">
     <table class="table align-middle bg-white">
@@ -32,7 +38,11 @@
     </table>
   </div>
 
-  <form method="post" th:action="@{/orders/{id}/pay(id=${order.id})}" th:unless="${paid}" class="card card-body bg-white">
+  <form method="post" th:action="@{/orders/{id}/advance(id=${order.id})}" th:if="${next != null}" class="mb-3">
+    <button class="btn btn-primary" th:text="'Mark as ' + ${next}"></button>
+  </form>
+
+  <form method="post" th:action="@{/orders/{id}/pay(id=${order.id})}" th:if="${canPay}" class="card card-body bg-white">
     <div class="row g-2 align-items-end">
       <div class="col-sm-6">
         <label class="form-label" for="method">Payment method</label>

@@ -86,6 +86,9 @@ public class WebController {
     @PostMapping("/order/new")
     String createOrder(@RequestParam("menuItemId") List<Integer> menuItemIds,
                        @RequestParam("quantity") List<Integer> quantities,
+                       @RequestParam(defaultValue = "TABLE") String orderType,
+                       @RequestParam(required = false, value = "tableNumber") String tableNumber,
+                       @RequestParam(required = false, value = "deliveryAddress") String deliveryAddress,
                        HttpSession session,
                        Model model) {
         User user = currentUser(session);
@@ -113,6 +116,9 @@ public class WebController {
         }
 
         try {
+            order.setOrderType(Order.OrderType.valueOf(orderType));
+            order.setTableNumber(tableNumber);
+            order.setDeliveryAddress(deliveryAddress);
             int orderId = orderService.createOrder(order, user);
             return "redirect:/orders/" + orderId;
         } catch (IllegalArgumentException e) {
@@ -143,8 +149,26 @@ public class WebController {
         model.addAttribute("order", order);
         model.addAttribute("lines", orderDAO.getOrderItems(id));
         model.addAttribute("paid", paymentDAO.hasSuccessfulPayment(id));
+        model.addAttribute("canPay", order.getStatus() == Order.OrderStatus.DELIVERED);
+        model.addAttribute("next", order.nextStatus());
         model.addAttribute("methods", Payment.PaymentMethod.values());
         return "order";
+    }
+
+    @PostMapping("/orders/{id}/advance")
+    String advance(@PathVariable int id,
+                   HttpSession session,
+                   RedirectAttributes redirect) {
+        User user = currentUser(session);
+        if (user == null) {
+            return "redirect:/login";
+        }
+        try {
+            orderService.advanceStatus(id, user);
+        } catch (IllegalArgumentException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/orders/" + id;
     }
 
     @PostMapping("/orders/{id}/pay")
