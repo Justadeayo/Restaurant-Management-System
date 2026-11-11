@@ -9,52 +9,80 @@
 <body class="bg-light">
 <div th:replace="~{layout :: nav}"></div>
 <div class="container">
-  <h1 class="h4 mb-3">Order #<span th:text="${order.id}"></span></h1>
-  <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
-  <div class="alert alert-success" th:if="${paid}">This order is paid.</div>
-  <p class="mb-3">
-    <span th:text="${order.orderType}"></span>
-    <span th:if="${order.tableNumber != null}" th:text="'· Table ' + ${order.tableNumber}"></span>
-    <span th:if="${order.deliveryAddress != null}" th:text="'· ' + ${order.deliveryAddress}"></span>
-    <span th:text="'· ' + ${order.status}"></span>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+    <h1 class="h4 mb-0">Order #<span th:text="${order.id}"></span></h1>
+    <span class="badge bg-secondary fs-6" th:text="${order.status}"></span>
+  </div>
+  <p class="text-muted mb-3">
+    <span th:text="${order.orderType.name() == 'REMOTE' ? 'Delivery' : 'Table'}"></span>:
+    <span th:if="${order.orderType.name() == 'REMOTE'}" th:text="${order.deliveryAddress}"></span>
+    <span th:if="${order.orderType.name() != 'REMOTE'}" th:text="${order.tableNumber}"></span>
   </p>
 
-  <div class="table-responsive mb-3">
-    <table class="table align-middle bg-white">
-      <thead>
-        <tr><th>Item</th><th>Price</th><th>Quantity</th><th>Subtotal</th></tr>
-      </thead>
-      <tbody>
-        <tr th:each="line : ${lines}">
-          <td th:text="${line.itemName}"></td>
-          <td th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)}"></td>
-          <td th:text="${line.quantity}"></td>
-          <td th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)}"></td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr><th colspan="3">Total</th><th th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)}"></th></tr>
-      </tfoot>
-    </table>
-  </div>
+  <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+  <div class="alert alert-success" th:if="${paid}">This order is paid.</div>
 
-  <form method="post" th:action="@{/orders/{id}/advance(id=${order.id})}" th:if="${next != null}" class="mb-3">
-    <button class="btn btn-primary" th:text="'Mark as ' + ${next}"></button>
-  </form>
+  <ul class="nav nav-pills nav-fill mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-items" type="button" role="tab">Items</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-progress" type="button" role="tab">Progress</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-payment" type="button" role="tab">Payment</button>
+    </li>
+  </ul>
 
-  <form method="post" th:action="@{/orders/{id}/pay(id=${order.id})}" th:if="${canPay}" class="card card-body bg-white">
-    <div class="row g-2 align-items-end">
-      <div class="col-sm-6">
-        <label class="form-label" for="method">Payment method</label>
-        <select class="form-select" id="method" name="method">
-          <option th:each="m : ${methods}" th:value="${m.name()}" th:text="${m}"></option>
-        </select>
-      </div>
-      <div class="col-sm-6">
-        <button class="btn btn-success w-100">Record payment</button>
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-items" role="tabpanel">
+      <div class="table-responsive">
+        <table class="table align-middle bg-white mb-0">
+          <thead>
+            <tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="line : ${lines}">
+              <td th:text="${line.itemName}"></td>
+              <td th:text="${#numbers.formatDecimal(line.unitPrice, 1, 2)}"></td>
+              <td th:text="${line.quantity}"></td>
+              <td th:text="${#numbers.formatDecimal(line.subtotal, 1, 2)}"></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><th colspan="3">Total</th><th th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)}"></th></tr>
+          </tfoot>
+        </table>
       </div>
     </div>
-  </form>
+
+    <div class="tab-pane fade" id="tab-progress" role="tabpanel">
+      <ol class="list-group mb-3">
+        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="s : ${steps}">
+          <span th:text="${s.label}"></span>
+          <span class="badge"
+                th:classappend="${s.state == 'done'} ? 'bg-success' : (${s.state == 'current'} ? 'bg-warning text-dark' : 'bg-light text-muted border')"
+                th:text="${s.state == 'done'} ? 'Done' : (${s.state == 'current'} ? 'Now' : 'To do')"></span>
+        </li>
+      </ol>
+      <form method="post" th:action="@{/orders/{id}/advance(id=${order.id})}" th:if="${next != null}">
+        <button class="btn btn-primary btn-lg w-100" th:text="${nextLabel}"></button>
+      </form>
+      <p class="text-muted" th:if="${next == null}">No more steps for this order.</p>
+    </div>
+
+    <div class="tab-pane fade" id="tab-payment" role="tabpanel">
+      <div class="alert alert-success" th:if="${paid}">This order has been paid in full.</div>
+      <form method="post" th:action="@{/orders/{id}/pay(id=${order.id})}" th:if="${canPay}" class="card card-body bg-white">
+        <label class="form-label" for="method">How did the customer pay?</label>
+        <select class="form-select mb-3" id="method" name="method">
+          <option th:each="m : ${methods}" th:value="${m.name()}" th:text="${m}"></option>
+        </select>
+        <button class="btn btn-success btn-lg w-100">Record payment</button>
+      </form>
+      <p class="text-muted" th:if="${!paid and !canPay}">Payment opens once the order has been delivered.</p>
+    </div>
+  </div>
 </div>
 </body>
 </html>

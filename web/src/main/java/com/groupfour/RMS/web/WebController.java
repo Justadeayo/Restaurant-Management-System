@@ -164,6 +164,8 @@ public class WebController {
         model.addAttribute("paid", paymentDAO.hasSuccessfulPayment(id));
         model.addAttribute("canPay", order.getStatus() == Order.OrderStatus.DELIVERED);
         model.addAttribute("next", order.nextStatus());
+        model.addAttribute("nextLabel", order.nextActionLabel());
+        model.addAttribute("steps", order.progressSteps());
         model.addAttribute("methods", Payment.PaymentMethod.values());
         return "order";
     }

@@ -110,4 +110,52 @@ public class Order {
         }
         return null;
     }
+
+    // The steps this order goes through, marked done, current or to do.
+    public List<OrderStep> progressSteps() {
+        List<OrderStatus> flow = new ArrayList<>();
+        flow.add(OrderStatus.PLACED);
+        flow.add(OrderStatus.SENT_TO_KITCHEN);
+        flow.add(OrderStatus.READY);
+        if (orderType == OrderType.REMOTE) {
+            flow.add(OrderStatus.OUT_FOR_DELIVERY);
+        }
+        flow.add(OrderStatus.DELIVERED);
+        flow.add(OrderStatus.PAID);
+
+        int current = flow.indexOf(status);
+        List<OrderStep> steps = new ArrayList<>();
+        for (int i = 0; i < flow.size(); i++) {
+            String state = i < current ? "done" : (i == current ? "current" : "todo");
+            steps.add(new OrderStep(stepLabel(flow.get(i)), state));
+        }
+        return steps;
+    }
+
+    private static String stepLabel(OrderStatus step) {
+        return switch (step) {
+            case PLACED -> "Order placed";
+            case SENT_TO_KITCHEN -> "Sent to kitchen";
+            case READY -> "Ready";
+            case OUT_FOR_DELIVERY -> "Out for delivery";
+            case DELIVERED -> "Delivered";
+            case PAID -> "Paid";
+            default -> step.name();
+        };
+    }
+
+    // Button text for the next step, or null when there is no next step.
+    public String nextActionLabel() {
+        OrderStatus next = nextStatus();
+        if (next == null) {
+            return null;
+        }
+        return switch (next) {
+            case SENT_TO_KITCHEN -> "Send to kitchen";
+            case READY -> "Mark as ready";
+            case OUT_FOR_DELIVERY -> "Mark out for delivery";
+            case DELIVERED -> "Mark as delivered";
+            default -> "Next step";
+        };
+    }
 }
