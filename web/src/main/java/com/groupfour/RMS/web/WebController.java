@@ -40,7 +40,7 @@ public class WebController {
 
     // Order pages are for cashiers and managers only; kitchen staff use /kitchen.
     private User cashierUser(HttpSession session) {
-        User user = cashierUser(session);
+        User user = currentUser(session);
         return user != null && user.getRole() != User.UserRole.KITCHEN ? user : null;
     }
 
