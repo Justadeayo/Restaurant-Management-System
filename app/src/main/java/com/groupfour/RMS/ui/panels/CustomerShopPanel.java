@@ -3,8 +3,6 @@ package com.groupfour.RMS.ui.panels;
 import com.groupfour.RMS.dao.MenuItemDAO;
 import com.groupfour.RMS.model.MenuItem;
 import com.groupfour.RMS.model.Order;
-import com.groupfour.RMS.model.OrderItem;
-import com.groupfour.RMS.model.User;
 import com.groupfour.RMS.service.AuthService;
 import com.groupfour.RMS.service.OrderService;
 import com.groupfour.RMS.ui.theme.Theme;
@@ -13,7 +11,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 // Customers choose items and a delivery address, then place a remote order.
 public class CustomerShopPanel extends JPanel {
@@ -108,23 +108,13 @@ public class CustomerShopPanel extends JPanel {
     }
 
     private void placeOrder() {
-        Order order = new Order();
+        Map<Integer, Integer> selected = new LinkedHashMap<>();
         for (int i = 0; i < items.size(); i++) {
-            int quantity = (Integer) quantities.get(i).getValue();
-            if (quantity > 0) {
-                MenuItem item = items.get(i);
-                order.addOrderItem(new OrderItem(item.getId(), item.getName(), quantity, item.getPrice()));
-            }
+            selected.put(items.get(i).getId(), (Integer) quantities.get(i).getValue());
         }
-        if (order.getOrderItems().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Choose at least one dish.", "Order", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        order.setDeliveryAddress(addressField.getText().trim());
         try {
-            User customer = authService.getCurrentUser();
-            int orderId = orderService.createOrder(order, customer);
+            int orderId = orderService.placeOrder(selected, null, addressField.getText().trim(),
+                    Order.OrderType.REMOTE, authService.getCurrentUser());
             JOptionPane.showMessageDialog(this,
                     "Thank you! Your order #" + orderId + " has been placed.\nTrack it under My Orders.",
                     "Order placed", JOptionPane.INFORMATION_MESSAGE);

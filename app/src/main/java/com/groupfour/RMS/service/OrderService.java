@@ -82,6 +82,32 @@ public class OrderService {
 
     // Moves an order to its next step. The database update only succeeds if the
     // order is still in the status we read, so two staff cannot skip a step together.
+    // Builds an order from the quantities chosen on any screen, then creates it.
+    // Dishes with no quantity, or that no longer exist, are skipped.
+    public int placeOrder(java.util.Map<Integer, Integer> quantityByMenuItemId, String tableNumber,
+                          String deliveryAddress, Order.OrderType orderType, User user) {
+        com.groupfour.RMS.dao.MenuItemDAO menuItemDAO = new com.groupfour.RMS.dao.MenuItemDAO();
+        Order order = new Order();
+        for (java.util.Map.Entry<Integer, Integer> entry : quantityByMenuItemId.entrySet()) {
+            Integer quantity = entry.getValue();
+            if (quantity == null || quantity <= 0) {
+                continue;
+            }
+            com.groupfour.RMS.model.MenuItem item = menuItemDAO.getMenuItemById(entry.getKey());
+            if (item == null) {
+                continue;
+            }
+            order.addOrderItem(new OrderItem(item.getId(), item.getName(), quantity, item.getPrice()));
+        }
+        if (order.getOrderItems().isEmpty()) {
+            throw new IllegalArgumentException("Add at least one item to the order.");
+        }
+        order.setOrderType(orderType);
+        order.setTableNumber(tableNumber);
+        order.setDeliveryAddress(deliveryAddress);
+        return createOrder(order, user);
+    }
+
     public void advanceStatus(int orderId, User user) {
         if (!user.isManager() && !user.isCashier() && !user.isKitchen() && !user.isRider()) {
             throw new IllegalArgumentException("Only staff can change order status");

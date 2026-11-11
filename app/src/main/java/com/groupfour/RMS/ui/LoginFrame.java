@@ -163,28 +163,16 @@ public class LoginFrame extends JFrame {
 
         JButton create = Theme.primaryButton("Create account");
         create.addActionListener(e -> {
-            String name = user.getText().trim();
-            String password = new String(pass.getPassword());
-            if (name.isEmpty() || password.length() < 6) {
-                JOptionPane.showMessageDialog(dialog, "Choose a username and a password of at least 6 characters.",
-                        "Create account", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (!password.equals(new String(confirm.getPassword()))) {
-                JOptionPane.showMessageDialog(dialog, "The two passwords do not match.",
-                        "Create account", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (new com.groupfour.RMS.dao.UserDAO().createUser(name, password,
-                    com.groupfour.RMS.model.User.UserRole.CUSTOMER)) {
+            try {
+                new com.groupfour.RMS.service.CustomerService().signUp(
+                        user.getText(), new String(pass.getPassword()), new String(confirm.getPassword()));
                 JOptionPane.showMessageDialog(dialog, "Account created. You can sign in now.",
                         "Create account", JOptionPane.INFORMATION_MESSAGE);
-                usernameField.setText(name);
+                usernameField.setText(user.getText().trim());
                 passwordField.setText("");
                 dialog.dispose();
-            } else {
-                JOptionPane.showMessageDialog(dialog, "That username is already taken.",
-                        "Create account", JOptionPane.WARNING_MESSAGE);
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Create account", JOptionPane.WARNING_MESSAGE);
             }
         });
 

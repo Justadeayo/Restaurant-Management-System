@@ -7,6 +7,7 @@ import com.groupfour.RMS.model.MenuItem;
 import com.groupfour.RMS.model.Order;
 import com.groupfour.RMS.model.OrderItem;
 import com.groupfour.RMS.model.User;
+import com.groupfour.RMS.service.CustomerService;
 import com.groupfour.RMS.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
@@ -17,7 +18,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 // Pages for customers: sign up, order online for delivery, and follow their own orders.
 @Controller
@@ -25,6 +28,7 @@ public class CustomerController {
     private final UserDAO userDAO = new UserDAO();
     private final MenuItemDAO menuItemDAO = new MenuItemDAO();
     private final OrderService orderService = new OrderService();
+    private final CustomerService customerService = new CustomerService();
     private final OrderDAO orderDAO = new OrderDAO();
 
     private User customerUser(HttpSession session) {
@@ -42,16 +46,10 @@ public class CustomerController {
                   @RequestParam String password,
                   @RequestParam String confirmPassword,
                   Model model) {
-        if (username.isBlank() || password.length() < 6) {
-            model.addAttribute("error", "Choose a username and a password of at least 6 characters.");
-            return "signup";
-        }
-        if (!password.equals(confirmPassword)) {
-            model.addAttribute("error", "The two passwords do not match.");
-            return "signup";
-        }
-        if (!userDAO.createUser(username.trim(), password, User.UserRole.CUSTOMER)) {
-            model.addAttribute("error", "That username is already taken.");
+        try {
+            customerService.signUp(username, password, confirmPassword);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", e.getMessage());
             return "signup";
         }
         return "redirect:/login?created";
@@ -77,29 +75,12 @@ public class CustomerController {
         if (customer == null) {
             return "redirect:/login";
         }
-
-        Order order = new Order();
+        Map<Integer, Integer> selected = new LinkedHashMap<>();
         for (int i = 0; i < menuItemIds.size() && i < quantities.size(); i++) {
-            int quantity = quantities.get(i);
-            if (quantity <= 0) {
-                continue;
-            }
-            MenuItem menuItem = menuItemDAO.getMenuItemById(menuItemIds.get(i));
-            if (menuItem == null) {
-                continue;
-            }
-            order.addOrderItem(new OrderItem(menuItem.getId(), menuItem.getName(), quantity, menuItem.getPrice()));
+            selected.merge(menuItemIds.get(i), quantities.get(i), Integer::sum);
         }
-
-        if (order.getOrderItems().isEmpty()) {
-            model.addAttribute("error", "Add at least one item to your order.");
-            model.addAttribute("items", menuItemDAO.getAvailableMenuItems());
-            return "shop";
-        }
-
         try {
-            order.setDeliveryAddress(deliveryAddress);
-            int orderId = orderService.createOrder(order, customer);
+            int orderId = orderService.placeOrder(selected, null, deliveryAddress, Order.OrderType.REMOTE, customer);
             redirect.addFlashAttribute("placed", true);
             return "redirect:/my-orders/" + orderId;
         } catch (IllegalArgumentException e) {
