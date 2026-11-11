@@ -8,6 +8,7 @@ import java.util.List;
 public class Order {
     private int id;
     private int cashierId;
+    private Integer customerId;
     private String cashierName;
     private OrderType orderType = OrderType.TABLE;
     private String tableNumber;
@@ -23,7 +24,7 @@ public class Order {
     }
 
     public enum OrderStatus {
-        PLACED, SENT_TO_KITCHEN, READY, OUT_FOR_DELIVERY, DELIVERED, PAID, CANCELLED
+        PLACED, SENT_TO_KITCHEN, READY, OUT_FOR_DELIVERY, PAID, COMPLETED, CANCELLED
     }
 
     public Order() {
@@ -49,6 +50,9 @@ public class Order {
 
     public int getCashierId() { return cashierId; }
     public void setCashierId(int cashierId) { this.cashierId = cashierId; }
+
+    public Integer getCustomerId() { return customerId; }
+    public void setCustomerId(Integer customerId) { this.customerId = customerId; }
 
     public String getCashierName() { return cashierName; }
     public void setCashierName(String cashierName) { this.cashierName = cashierName; }
@@ -93,8 +97,8 @@ public class Order {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    // The only next step an order can take, or null when it has none.
-    // Payment is not a status step; it is recorded after the order is DELIVERED.
+    // The only next step an order can take from the kitchen, rider or manager, or null when it has none.
+    // Payment moves a ready table order to COMPLETED, or an out-for-delivery remote order to PAID.
     public OrderStatus nextStatus() {
         if (status == OrderStatus.PLACED) {
             return OrderStatus.SENT_TO_KITCHEN;
@@ -102,16 +106,24 @@ public class Order {
         if (status == OrderStatus.SENT_TO_KITCHEN) {
             return OrderStatus.READY;
         }
-        if (status == OrderStatus.READY) {
-            return orderType == OrderType.REMOTE ? OrderStatus.OUT_FOR_DELIVERY : OrderStatus.DELIVERED;
+        if (status == OrderStatus.READY && orderType == OrderType.REMOTE) {
+            return OrderStatus.OUT_FOR_DELIVERY;
         }
-        if (status == OrderStatus.OUT_FOR_DELIVERY) {
-            return OrderStatus.DELIVERED;
+        if (status == OrderStatus.PAID && orderType == OrderType.REMOTE) {
+            return OrderStatus.COMPLETED;
         }
         return null;
     }
 
-    // The steps this order goes through, marked done, current or to do.
+    // True when the order can be paid right now: a table order that is ready,
+    // or a remote order whose rider has arrived.
+    public boolean canBePaid() {
+        return (orderType == OrderType.TABLE && status == OrderStatus.READY)
+            || (orderType == OrderType.REMOTE && status == OrderStatus.OUT_FOR_DELIVERY);
+    }
+
+    // The steps this order goes through. Done steps are ticked, the current one is highlighted,
+    // and every step is ticked once the order is COMPLETED.
     public List<OrderStep> progressSteps() {
         List<OrderStatus> flow = new ArrayList<>();
         flow.add(OrderStatus.PLACED);
@@ -120,13 +132,14 @@ public class Order {
         if (orderType == OrderType.REMOTE) {
             flow.add(OrderStatus.OUT_FOR_DELIVERY);
         }
-        flow.add(OrderStatus.DELIVERED);
         flow.add(OrderStatus.PAID);
+        flow.add(OrderStatus.COMPLETED);
 
         int current = flow.indexOf(status);
+        boolean finished = status == OrderStatus.COMPLETED;
         List<OrderStep> steps = new ArrayList<>();
         for (int i = 0; i < flow.size(); i++) {
-            String state = i < current ? "done" : (i == current ? "current" : "todo");
+            String state = (finished || i < current) ? "done" : (i == current ? "current" : "todo");
             steps.add(new OrderStep(stepLabel(flow.get(i)), state));
         }
         return steps;
@@ -138,8 +151,8 @@ public class Order {
             case SENT_TO_KITCHEN -> "Sent to kitchen";
             case READY -> "Ready";
             case OUT_FOR_DELIVERY -> "Out for delivery";
-            case DELIVERED -> "Delivered";
             case PAID -> "Paid";
+            case COMPLETED -> "Completed";
             default -> step.name();
         };
     }
@@ -154,7 +167,8 @@ public class Order {
             case SENT_TO_KITCHEN -> "Send to kitchen";
             case READY -> "Mark as ready";
             case OUT_FOR_DELIVERY -> "Mark out for delivery";
-            case DELIVERED -> "Mark as delivered";
+            case COMPLETED -> "Mark as delivered";
+            case PAID -> "Mark as paid";
             default -> "Next step";
         };
     }

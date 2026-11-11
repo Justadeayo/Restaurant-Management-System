@@ -13,7 +13,7 @@ import java.util.List;
 public class OrderDAO {
     
     public int createOrder(Order order) {
-        String sql = "INSERT INTO orders (cashier_id, total_amount, status, order_type, table_number, delivery_address) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO orders (cashier_id, total_amount, status, order_type, table_number, delivery_address, customer_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -24,12 +24,17 @@ public class OrderDAO {
             conn.setAutoCommit(false);
             
             stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            stmt.setInt(1, order.getCashierId());
+            if (order.getCashierId() > 0) {
+                stmt.setInt(1, order.getCashierId());
+            } else {
+                stmt.setNull(1, Types.INTEGER);
+            }
             stmt.setBigDecimal(2, order.getTotalAmount());
             stmt.setString(3, order.getStatus().name());
             stmt.setString(4, order.getOrderType().name());
             stmt.setString(5, order.getTableNumber());
             stmt.setString(6, order.getDeliveryAddress());
+            stmt.setObject(7, order.getCustomerId());
             
             stmt.executeUpdate();
             rs = stmt.getGeneratedKeys();
@@ -86,7 +91,7 @@ public class OrderDAO {
     }
     
     public Order getOrderById(int orderId) {
-        String sql = "SELECT o.*, u.username as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id WHERE o.id = ?";
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o LEFT JOIN users u ON o.cashier_id = u.id WHERE o.id = ?";
         
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -107,7 +112,7 @@ public class OrderDAO {
     
     public List<Order> getAllOrders() {
         List<Order> orders = new ArrayList<>();
-        String sql = "SELECT o.*, u.username as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id ORDER BY o.created_at DESC";
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o LEFT JOIN users u ON o.cashier_id = u.id ORDER BY o.created_at DESC";
         
         try (Connection conn = DBConfig.getConnection();
              Statement stmt = conn.createStatement();
@@ -124,7 +129,7 @@ public class OrderDAO {
     
     public List<Order> getOrdersByStatus(Order.OrderStatus status) {
         List<Order> orders = new ArrayList<>();
-        String sql = "SELECT o.*, u.username as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id WHERE o.status = ? ORDER BY o.created_at ASC";
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o LEFT JOIN users u ON o.cashier_id = u.id WHERE o.status = ? ORDER BY o.created_at ASC";
 
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -143,12 +148,31 @@ public class OrderDAO {
     // Remote orders that are ready or already out for delivery, oldest first.
     public List<Order> getDeliveryOrders() {
         List<Order> orders = new ArrayList<>();
-        String sql = "SELECT o.*, u.username as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id "
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o LEFT JOIN users u ON o.cashier_id = u.id "
             + "WHERE o.order_type = 'REMOTE' AND o.status IN ('READY', 'OUT_FOR_DELIVERY') ORDER BY o.created_at ASC";
 
         try (Connection conn = DBConfig.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                orders.add(mapResultSetToOrder(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orders;
+    }
+
+    // Orders placed by one customer, newest first.
+    public List<Order> getOrdersForCustomer(int customerId) {
+        List<Order> orders = new ArrayList<>();
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o LEFT JOIN users u ON o.cashier_id = u.id "
+            + "WHERE o.customer_id = ? ORDER BY o.created_at DESC";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, customerId);
+            ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 orders.add(mapResultSetToOrder(rs));
             }
@@ -187,7 +211,7 @@ public class OrderDAO {
     
     // Changes status only if the order is still in the status we expect.
     public boolean changeStatus(int orderId, Order.OrderStatus from, Order.OrderStatus to) {
-        String sql = "UPDATE orders SET status = ?, completed_at = IF(? = 'PAID', NOW(), completed_at) WHERE id = ? AND status = ?";
+        String sql = "UPDATE orders SET status = ?, completed_at = IF(? = 'COMPLETED', NOW(), completed_at) WHERE id = ? AND status = ?";
 
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -209,6 +233,7 @@ public class OrderDAO {
         order.setId(rs.getInt("id"));
         order.setCashierId(rs.getInt("cashier_id"));
         order.setCashierName(rs.getString("cashier_name"));
+        order.setCustomerId((Integer) rs.getObject("customer_id"));
         order.setOrderType(Order.OrderType.valueOf(rs.getString("order_type")));
         order.setTableNumber(rs.getString("table_number"));
         order.setDeliveryAddress(rs.getString("delivery_address"));

@@ -23,7 +23,16 @@ public class OrderService {
     }
 
     public int createOrder(Order order, User cashier) {
-        order.setCashierId(cashier.getId());
+        if (cashier.isCustomer()) {
+            order.setCashierId(0);
+            order.setCustomerId(cashier.getId());
+            order.setOrderType(Order.OrderType.REMOTE);
+        } else if (cashier.isManager() || cashier.isCashier()) {
+            order.setCashierId(cashier.getId());
+            order.setCustomerId(null);
+        } else {
+            throw new IllegalArgumentException("This account cannot place orders");
+        }
         validateDestination(order);
 
         for (OrderItem item : order.getOrderItems()) {
@@ -85,8 +94,8 @@ public class OrderService {
             throw new IllegalArgumentException("Kitchen can only mark orders that were sent to the kitchen as ready");
         }
         if (user.isRider() && (order.getOrderType() != Order.OrderType.REMOTE
-                || (order.getStatus() != Order.OrderStatus.READY && order.getStatus() != Order.OrderStatus.OUT_FOR_DELIVERY))) {
-            throw new IllegalArgumentException("Riders can only move remote orders that are ready or out for delivery");
+                || (order.getStatus() != Order.OrderStatus.READY && order.getStatus() != Order.OrderStatus.PAID))) {
+            throw new IllegalArgumentException("Riders can only move remote orders that are ready or paid");
         }
         Order.OrderStatus next = order.nextStatus();
         if (next == null) {
@@ -98,6 +107,21 @@ public class OrderService {
     }
 
     public boolean processPayment(int orderId, Payment.PaymentMethod method, User processedBy) {
+        if (!processedBy.isManager() && !processedBy.isCashier()) {
+            throw new IllegalArgumentException("Only staff can record payments");
+        }
+        return recordPayment(orderId, method, processedBy.getId());
+    }
+
+    // A customer pays online once their remote order is out for delivery.
+    public boolean customerPay(int orderId, User customer) {
+        if (getCustomerOrder(orderId, customer) == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        return recordPayment(orderId, Payment.PaymentMethod.CARD, customer.getId());
+    }
+
+    private boolean recordPayment(int orderId, Payment.PaymentMethod method, int processedById) {
         Order order = orderDAO.getOrderById(orderId);
         if (order == null) {
             return false;
@@ -111,8 +135,8 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot pay for cancelled order");
         }
 
-        if (order.getStatus() != Order.OrderStatus.DELIVERED) {
-            throw new IllegalArgumentException("Payment is recorded after the order is delivered");
+        if (!order.canBePaid()) {
+            throw new IllegalArgumentException("This order cannot be paid yet");
         }
 
         Connection conn = null;
@@ -126,7 +150,7 @@ public class OrderService {
             payment.setAmount(order.getTotalAmount());
             payment.setPaymentMethod(method);
             payment.setStatus(Payment.PaymentStatus.SUCCESSFUL);
-            payment.setProcessedBy(processedBy.getId());
+            payment.setProcessedBy(processedById);
 
             // Insert payment
             String paymentSql = "INSERT INTO payments (order_id, amount, payment_method, status, processed_by) VALUES (?, ?, ?, ?, ?)";
@@ -155,10 +179,15 @@ public class OrderService {
                 }
             }
 
-            // Mark the order paid, only if it is still delivered
-            String orderSql = "UPDATE orders SET status = 'PAID', completed_at = NOW() WHERE id = ? AND status = 'DELIVERED'";
+            // Remote orders are PAID until the rider delivers them; table orders are complete once paid
+            Order.OrderStatus paidTo = order.getOrderType() == Order.OrderType.REMOTE
+                ? Order.OrderStatus.PAID : Order.OrderStatus.COMPLETED;
+            String orderSql = "UPDATE orders SET status = ?, completed_at = IF(? = 'COMPLETED', NOW(), completed_at) WHERE id = ? AND status = ?";
             try (var stmt = conn.prepareStatement(orderSql)) {
-                stmt.setInt(1, orderId);
+                stmt.setString(1, paidTo.name());
+                stmt.setString(2, paidTo.name());
+                stmt.setInt(3, orderId);
+                stmt.setString(4, order.getStatus().name());
                 if (stmt.executeUpdate() == 0) {
                     throw new SQLException("Order is not ready for payment");
                 }
@@ -190,6 +219,20 @@ public class OrderService {
 
     public List<Order> getAllOrders() {
         return orderDAO.getAllOrders();
+    }
+
+    // A customer's own orders, newest first.
+    public List<Order> getCustomerOrders(User customer) {
+        return orderDAO.getOrdersForCustomer(customer.getId());
+    }
+
+    // One order, only if it belongs to this customer. Returns null otherwise.
+    public Order getCustomerOrder(int orderId, User customer) {
+        Order order = orderDAO.getOrderById(orderId);
+        if (order == null || order.getCustomerId() == null || order.getCustomerId() != customer.getId()) {
+            return null;
+        }
+        return order;
     }
 
     // Remote orders waiting for a rider: ready, or already out for delivery.

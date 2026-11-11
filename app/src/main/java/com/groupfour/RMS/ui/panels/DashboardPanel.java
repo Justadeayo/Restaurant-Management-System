@@ -90,7 +90,7 @@ public class DashboardPanel extends JPanel {
         try (Connection conn = DBConfig.getConnection()) {
             try (PreparedStatement stmt = conn.prepareStatement(
                     "SELECT COALESCE(SUM(total_amount), 0), COUNT(*) FROM orders "
-                    + "WHERE status = 'PAID' AND DATE(created_at) = ?")) {
+                    + "WHERE status IN ('PAID', 'COMPLETED') AND DATE(created_at) = ?")) {
                 stmt.setDate(1, Date.valueOf(LocalDate.now()));
                 try (ResultSet rs = stmt.executeQuery()) {
                     rs.next();
@@ -98,7 +98,7 @@ public class DashboardPanel extends JPanel {
                     paidValue.setText(String.valueOf(rs.getLong(2)));
                 }
             }
-            try (PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM orders WHERE status NOT IN ('PAID', 'CANCELLED')");
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM orders WHERE status NOT IN ('COMPLETED', 'CANCELLED')");
                  ResultSet rs = stmt.executeQuery()) {
                 rs.next();
                 openValue.setText(String.valueOf(rs.getLong(1)));

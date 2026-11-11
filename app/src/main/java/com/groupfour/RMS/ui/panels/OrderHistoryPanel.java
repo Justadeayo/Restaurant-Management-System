@@ -161,15 +161,15 @@ public class OrderHistoryPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 14));
         panel.setBorder(new EmptyBorder(14, 14, 14, 14));
 
-        if (order.getStatus() == Order.OrderStatus.PAID) {
+        if (order.getStatus() == Order.OrderStatus.PAID || order.getStatus() == Order.OrderStatus.COMPLETED) {
             JLabel paid = new JLabel("This order has been paid in full.");
             paid.setFont(Theme.BODY_BOLD);
             paid.setForeground(Theme.SUCCESS);
             panel.add(paid, BorderLayout.NORTH);
             return panel;
         }
-        if (order.getStatus() != Order.OrderStatus.DELIVERED) {
-            JLabel wait = new JLabel("Payment opens once the order has been delivered.");
+        if (!order.canBePaid()) {
+            JLabel wait = new JLabel("Payment opens when the order is ready to pay.");
             wait.setFont(Theme.BODY);
             wait.setForeground(Theme.TEXT_MUTED);
             panel.add(wait, BorderLayout.NORTH);

@@ -30,6 +30,7 @@ public class WebController {
     private final OrderService orderService = new OrderService();
 
     private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN, User.UserRole.RIDER);
+    private static final List<User.UserRole> SIGN_IN_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN, User.UserRole.RIDER, User.UserRole.CUSTOMER);
 
     private User currentUser(HttpSession session) {
         User user = Sessions.signedIn(session);
@@ -52,18 +53,30 @@ public class WebController {
         if (user.getRole() == User.UserRole.RIDER) {
             return "redirect:/rider";
         }
+        if (user.getRole() == User.UserRole.CUSTOMER) {
+            return "redirect:/shop";
+        }
         return "redirect:/order/new";
     }
 
     @GetMapping("/")
     String root(HttpSession session) {
         User user = cashierUser(session);
+        if (user == null) {
+            user = Sessions.signedIn(session);
+        }
         return user == null ? "redirect:/login" : homePage(user);
     }
 
     @GetMapping("/login")
     String loginForm(HttpSession session) {
         User user = cashierUser(session);
+        if (user == null) {
+            user = currentUser(session);
+        }
+        if (user == null && Sessions.signedIn(session) instanceof User customer && customer.getRole() == User.UserRole.CUSTOMER) {
+            user = customer;
+        }
         return user == null ? "login" : homePage(user);
     }
 
@@ -73,7 +86,7 @@ public class WebController {
                  HttpSession session,
                  Model model) {
         User user = userDAO.authenticate(username, password);
-        if (user == null || !STAFF_ROLES.contains(user.getRole())) {
+        if (user == null || !SIGN_IN_ROLES.contains(user.getRole())) {
             model.addAttribute("error", "Invalid username or password.");
             return "login";
         }
@@ -162,7 +175,7 @@ public class WebController {
         model.addAttribute("order", order);
         model.addAttribute("lines", orderDAO.getOrderItems(id));
         model.addAttribute("paid", paymentDAO.hasSuccessfulPayment(id));
-        model.addAttribute("canPay", order.getStatus() == Order.OrderStatus.DELIVERED);
+        model.addAttribute("canPay", order.canBePaid());
         model.addAttribute("next", order.nextStatus());
         model.addAttribute("nextLabel", order.nextActionLabel());
         model.addAttribute("steps", order.progressSteps());

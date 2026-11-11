@@ -43,4 +43,8 @@ public class AuthService {
     public boolean isRider() {
         return currentUser != null && currentUser.isRider();
     }
+
+    public boolean isCustomer() {
+        return currentUser != null && currentUser.isCustomer();
+    }
 }

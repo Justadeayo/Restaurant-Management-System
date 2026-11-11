@@ -116,7 +116,8 @@ public class UserDAO {
         String sql = "DELETE FROM users WHERE id = ? "
             + "AND NOT EXISTS (SELECT 1 FROM orders WHERE cashier_id = ?) "
             + "AND NOT EXISTS (SELECT 1 FROM payments WHERE processed_by = ?) "
-            + "AND NOT EXISTS (SELECT 1 FROM inventory_movements WHERE user_id = ?)";
+            + "AND NOT EXISTS (SELECT 1 FROM inventory_movements WHERE user_id = ?) "
+            + "AND NOT EXISTS (SELECT 1 FROM orders WHERE customer_id = ?)";
 
         try (Connection conn = DBConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -124,6 +125,7 @@ public class UserDAO {
             stmt.setInt(2, userId);
             stmt.setInt(3, userId);
             stmt.setInt(4, userId);
+            stmt.setInt(5, userId);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

@@ -12,6 +12,7 @@
   <h1 class="h3 mb-4 text-center">Restaurant Management System</h1>
   <div class="card shadow-sm">
     <div class="card-body p-4">
+      <div class="alert alert-success" th:if="${param.created}">Account created. You can log in now.</div>
       <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
       <form method="post" action="/login">
         <div class="mb-3">
@@ -24,6 +25,7 @@
         </div>
         <button class="btn btn-success w-100">Log in</button>
       </form>
+      <p class="text-center mt-3 mb-0"><a href="/signup">New customer? Create an account</a></p>
     </div>
   </div>
 </div>

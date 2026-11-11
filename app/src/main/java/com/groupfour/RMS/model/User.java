@@ -59,4 +59,8 @@ public class User {
     public boolean isRider() {
         return role == UserRole.RIDER;
     }
+
+    public boolean isCustomer() {
+        return role == UserRole.CUSTOMER;
+    }
 }

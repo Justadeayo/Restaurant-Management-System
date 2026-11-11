@@ -31,15 +31,17 @@ CREATE TABLE IF NOT EXISTS menu_items (
 -- Orders table
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    cashier_id INT NOT NULL,
+    cashier_id INT NULL,
+    customer_id INT NULL,
     total_amount DECIMAL(10, 2) DEFAULT 0.00,
     order_type ENUM('TABLE', 'REMOTE') NOT NULL DEFAULT 'TABLE',
     table_number VARCHAR(20) NULL,
     delivery_address VARCHAR(255) NULL,
-    status ENUM('PLACED', 'SENT_TO_KITCHEN', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PAID', 'CANCELLED') NOT NULL DEFAULT 'PLACED',
+    status ENUM('PLACED', 'SENT_TO_KITCHEN', 'READY', 'OUT_FOR_DELIVERY', 'PAID', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PLACED',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
-    FOREIGN KEY (cashier_id) REFERENCES users(id)
+    FOREIGN KEY (cashier_id) REFERENCES users(id),
+    FOREIGN KEY (customer_id) REFERENCES users(id)
 );
 
 -- Order items table

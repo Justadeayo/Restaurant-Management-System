@@ -18,6 +18,12 @@
         <li class="nav-item" th:if="${session.user != null and (session.user.role.name() == 'MANAGER' or session.user.role.name() == 'CASHIER')}">
           <a class="nav-link px-3 rounded" href="/orders">Orders</a>
         </li>
+        <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'CUSTOMER'}">
+          <a class="nav-link px-3 rounded" href="/shop">Order online</a>
+        </li>
+        <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'CUSTOMER'}">
+          <a class="nav-link px-3 rounded" href="/my-orders">My orders</a>
+        </li>
         <li class="nav-item" th:if="${session.user != null and session.user.role.name() == 'KITCHEN'}">
           <a class="nav-link px-3 rounded" href="/kitchen">Kitchen</a>
         </li>
