@@ -43,6 +43,8 @@ public class MainFrame extends JFrame {
         } else if (authService.isCashier()) {
             tabbedPane.addTab("New Order", new NewOrderPanel(authService));
             tabbedPane.addTab("Order History", new OrderHistoryPanel(authService));
+        } else if (authService.isKitchen()) {
+            tabbedPane.addTab("Kitchen", new KitchenPanel(authService));
         }
 
         add(tabbedPane, BorderLayout.CENTER);

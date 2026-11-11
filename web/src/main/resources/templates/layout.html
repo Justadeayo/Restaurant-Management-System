@@ -3,10 +3,11 @@
 <body>
 <nav th:fragment="nav" class="navbar navbar-dark bg-success mb-4">
   <div class="container">
-    <a class="navbar-brand" href="/order/new">RMS</a>
+    <a class="navbar-brand" href="/">RMS</a>
     <div class="d-flex align-items-center gap-3">
-      <a class="text-white" href="/order/new">New order</a>
-      <a class="text-white" href="/orders">Orders</a>
+      <a class="text-white" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}" href="/order/new">New order</a>
+      <a class="text-white" th:if="${session.user != null and session.user.role.name() != 'KITCHEN'}" href="/orders">Orders</a>
+      <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'KITCHEN'}" href="/kitchen">Kitchen</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}" href="/manager">Dashboard</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}" href="/manager/menu">Menu</a>
       <a class="text-white" th:if="${session.user != null and session.user.role.name() == 'MANAGER'}" href="/manager/staff">Staff</a>

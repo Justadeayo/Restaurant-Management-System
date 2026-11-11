@@ -122,6 +122,24 @@ public class OrderDAO {
         return orders;
     }
     
+    public List<Order> getOrdersByStatus(Order.OrderStatus status) {
+        List<Order> orders = new ArrayList<>();
+        String sql = "SELECT o.*, u.username as cashier_name FROM orders o JOIN users u ON o.cashier_id = u.id WHERE o.status = ? ORDER BY o.created_at ASC";
+
+        try (Connection conn = DBConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status.name());
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                orders.add(mapResultSetToOrder(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return orders;
+    }
+
     public List<OrderItem> getOrderItems(int orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = "SELECT * FROM order_items WHERE order_id = ?";

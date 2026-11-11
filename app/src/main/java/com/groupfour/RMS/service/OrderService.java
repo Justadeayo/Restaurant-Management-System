@@ -74,12 +74,15 @@ public class OrderService {
     // Moves an order to its next step. The database update only succeeds if the
     // order is still in the status we read, so two staff cannot skip a step together.
     public void advanceStatus(int orderId, User user) {
-        if (!user.isManager() && !user.isCashier()) {
+        if (!user.isManager() && !user.isCashier() && !user.isKitchen()) {
             throw new IllegalArgumentException("Only staff can change order status");
         }
         Order order = orderDAO.getOrderById(orderId);
         if (order == null) {
             throw new IllegalArgumentException("Order not found");
+        }
+        if (user.isKitchen() && order.getStatus() != Order.OrderStatus.SENT_TO_KITCHEN) {
+            throw new IllegalArgumentException("Kitchen can only mark orders that were sent to the kitchen as ready");
         }
         Order.OrderStatus next = order.nextStatus();
         if (next == null) {
@@ -183,6 +186,15 @@ public class OrderService {
 
     public List<Order> getAllOrders() {
         return orderDAO.getAllOrders();
+    }
+
+    // Orders waiting in the kitchen, oldest first, with their items.
+    public List<Order> getKitchenQueue() {
+        List<Order> orders = orderDAO.getOrdersByStatus(Order.OrderStatus.SENT_TO_KITCHEN);
+        for (Order order : orders) {
+            order.setOrderItems(orderDAO.getOrderItems(order.getId()));
+        }
+        return orders;
     }
 
     public Order getOrderById(int orderId) {

@@ -159,7 +159,7 @@ public class LoginFrame extends JFrame {
         loginButton.setEnabled(false);
         try {
             if (authService.login(username, password)) {
-                if (!authService.isManager() && !authService.isCashier()) {
+                if (!authService.isManager() && !authService.isCashier() && !authService.isKitchen()) {
                     authService.logout();
                     JOptionPane.showMessageDialog(this, "This account has no screen in the desktop app yet.",
                             "Login Refused", JOptionPane.WARNING_MESSAGE);

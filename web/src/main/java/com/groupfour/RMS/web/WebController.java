@@ -29,7 +29,7 @@ public class WebController {
     private final PaymentDAO paymentDAO = new PaymentDAO();
     private final OrderService orderService = new OrderService();
 
-    private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER);
+    private static final List<User.UserRole> STAFF_ROLES = List.of(User.UserRole.MANAGER, User.UserRole.CASHIER, User.UserRole.KITCHEN);
 
     private User currentUser(HttpSession session) {
         if (session.getAttribute("user") instanceof User user && STAFF_ROLES.contains(user.getRole())) {
@@ -38,19 +38,31 @@ public class WebController {
         return null;
     }
 
+    // Order pages are for cashiers and managers only; kitchen staff use /kitchen.
+    private User cashierUser(HttpSession session) {
+        User user = cashierUser(session);
+        return user != null && user.getRole() != User.UserRole.KITCHEN ? user : null;
+    }
+
     private String homePage(User user) {
-        return user.getRole() == User.UserRole.MANAGER ? "redirect:/manager" : "redirect:/order/new";
+        if (user.getRole() == User.UserRole.MANAGER) {
+            return "redirect:/manager";
+        }
+        if (user.getRole() == User.UserRole.KITCHEN) {
+            return "redirect:/kitchen";
+        }
+        return "redirect:/order/new";
     }
 
     @GetMapping("/")
     String root(HttpSession session) {
-        User user = currentUser(session);
+        User user = cashierUser(session);
         return user == null ? "redirect:/login" : homePage(user);
     }
 
     @GetMapping("/login")
     String loginForm(HttpSession session) {
-        User user = currentUser(session);
+        User user = cashierUser(session);
         return user == null ? "login" : homePage(user);
     }
 
@@ -76,7 +88,7 @@ public class WebController {
 
     @GetMapping("/order/new")
     String newOrderForm(HttpSession session, Model model) {
-        if (currentUser(session) == null) {
+        if (cashierUser(session) == null) {
             return "redirect:/login";
         }
         model.addAttribute("items", menuItemDAO.getAvailableMenuItems());
@@ -91,7 +103,7 @@ public class WebController {
                        @RequestParam(required = false, value = "deliveryAddress") String deliveryAddress,
                        HttpSession session,
                        Model model) {
-        User user = currentUser(session);
+        User user = cashierUser(session);
         if (user == null) {
             return "redirect:/login";
         }
@@ -130,7 +142,7 @@ public class WebController {
 
     @GetMapping("/orders")
     String orders(HttpSession session, Model model) {
-        if (currentUser(session) == null) {
+        if (cashierUser(session) == null) {
             return "redirect:/login";
         }
         model.addAttribute("orders", orderService.getAllOrders());
@@ -139,7 +151,7 @@ public class WebController {
 
     @GetMapping("/orders/{id}")
     String orderDetail(@PathVariable int id, HttpSession session, Model model) {
-        if (currentUser(session) == null) {
+        if (cashierUser(session) == null) {
             return "redirect:/login";
         }
         Order order = orderService.getOrderById(id);
