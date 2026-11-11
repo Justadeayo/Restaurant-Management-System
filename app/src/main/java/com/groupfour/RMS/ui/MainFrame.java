@@ -59,6 +59,9 @@ public class MainFrame extends JFrame {
             addScreen("Kitchen", new KitchenPanel(authService));
         } else if (authService.isRider()) {
             addScreen("Deliveries", new DeliveryPanel(authService));
+        } else if (authService.isCustomer()) {
+            addScreen("Order Online", new CustomerShopPanel(authService));
+            addScreen("My Orders", new MyOrdersPanel(authService));
         }
 
         add(contentPanel, BorderLayout.CENTER);

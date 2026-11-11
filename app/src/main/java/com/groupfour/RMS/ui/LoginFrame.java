@@ -131,12 +131,73 @@ public class LoginFrame extends JFrame {
         hint.setForeground(Theme.TEXT_MUTED);
         card.add(hint, gbc);
 
+        gbc.gridy = 6;
+        gbc.insets = new Insets(10, 6, 0, 6);
+        JButton signUpButton = Theme.secondaryButton("New customer? Create an account");
+        signUpButton.setPreferredSize(new Dimension(0, 34));
+        signUpButton.addActionListener(e -> openSignUp());
+        card.add(signUpButton, gbc);
+
         loginButton.addActionListener(e -> performLogin());
         passwordField.addActionListener(e -> performLogin());
         usernameField.addActionListener(e -> passwordField.requestFocusInWindow());
 
         wrapper.add(card);
         return wrapper;
+    }
+
+    // Customers create their own account; they can then order online.
+    private void openSignUp() {
+        JDialog dialog = new JDialog(this, "Create customer account", true);
+        JPanel form = new JPanel(new GridLayout(0, 1, 6, 6));
+        form.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        JTextField user = new JTextField();
+        JPasswordField pass = new JPasswordField();
+        JPasswordField confirm = new JPasswordField();
+        form.add(fieldLabel("Username"));
+        form.add(user);
+        form.add(fieldLabel("Password (at least 6 characters)"));
+        form.add(pass);
+        form.add(fieldLabel("Confirm password"));
+        form.add(confirm);
+
+        JButton create = Theme.primaryButton("Create account");
+        create.addActionListener(e -> {
+            String name = user.getText().trim();
+            String password = new String(pass.getPassword());
+            if (name.isEmpty() || password.length() < 6) {
+                JOptionPane.showMessageDialog(dialog, "Choose a username and a password of at least 6 characters.",
+                        "Create account", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (!password.equals(new String(confirm.getPassword()))) {
+                JOptionPane.showMessageDialog(dialog, "The two passwords do not match.",
+                        "Create account", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (new com.groupfour.RMS.dao.UserDAO().createUser(name, password,
+                    com.groupfour.RMS.model.User.UserRole.CUSTOMER)) {
+                JOptionPane.showMessageDialog(dialog, "Account created. You can sign in now.",
+                        "Create account", JOptionPane.INFORMATION_MESSAGE);
+                usernameField.setText(name);
+                passwordField.setText("");
+                dialog.dispose();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "That username is already taken.",
+                        "Create account", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setBorder(BorderFactory.createEmptyBorder(0, 16, 16, 16));
+        bottom.add(create, BorderLayout.CENTER);
+
+        dialog.setLayout(new BorderLayout());
+        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(bottom, BorderLayout.SOUTH);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     private JLabel fieldLabel(String text) {
@@ -159,7 +220,7 @@ public class LoginFrame extends JFrame {
         loginButton.setEnabled(false);
         try {
             if (authService.login(username, password)) {
-                if (!authService.isManager() && !authService.isCashier() && !authService.isKitchen() && !authService.isRider()) {
+                if (!authService.isManager() && !authService.isCashier() && !authService.isKitchen() && !authService.isRider() && !authService.isCustomer()) {
                     authService.logout();
                     JOptionPane.showMessageDialog(this, "This account has no screen in the desktop app yet.",
                             "Login Refused", JOptionPane.WARNING_MESSAGE);
