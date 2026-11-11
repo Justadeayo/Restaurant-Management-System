@@ -20,7 +20,7 @@ public class StaffController {
         if (Sessions.manager(session) == null) {
             return "redirect:/login";
         }
-        model.addAttribute("users", userDAO.getAllUsers());
+        model.addAttribute("users", userDAO.getStaffUsers());
         model.addAttribute("roles", User.UserRole.values());
         return "staff";
     }

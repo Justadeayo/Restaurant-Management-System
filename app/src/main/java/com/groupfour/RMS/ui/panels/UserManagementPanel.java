@@ -51,7 +51,7 @@ public class UserManagementPanel extends JPanel {
 
     private void loadUsers() {
         cardGrid.removeAll();
-        List<User> users = userDAO.getAllUsers();
+        List<User> users = userDAO.getStaffUsers();
         for (User user : users) {
             cardGrid.add(buildCard(user));
         }
