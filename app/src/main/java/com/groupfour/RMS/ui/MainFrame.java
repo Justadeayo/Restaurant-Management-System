@@ -34,6 +34,7 @@ public class MainFrame extends JFrame {
         tabbedPane.setFont(Theme.BODY_BOLD);
 
         if (authService.isManager()) {
+            tabbedPane.addTab("Dashboard", new DashboardPanel());
             tabbedPane.addTab("Menu Management", new MenuManagementPanel());
             tabbedPane.addTab("Inventory", new InventoryPanel());
             tabbedPane.addTab("Orders", new OrderHistoryPanel());
